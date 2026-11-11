@@ -1,0 +1,355 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. SISTEM OTENTIKASI & RBAC GRANULAR
+// ==========================================
+
+model SecRole {
+  id          Int           @id @default(autoincrement())
+  namaRole    String        @unique @map("nama_role")
+  keterangan  String?
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  users       SecUser[]
+  roleMenus   SecRoleMenu[]
+
+  @@map("sec_role")
+}
+
+model SecUser {
+  id          Int       @id @default(autoincrement())
+  username    String    @unique
+  password    String
+  namaLengkap String    @map("nama_lengkap")
+  email       String?
+  roleId      Int       @map("role_id")
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  role        SecRole   @relation(fields: [roleId], references: [id])
+
+  @@map("sec_user")
+}
+
+model SecMenu {
+  id        Int           @id @default(autoincrement())
+  namaMenu  String        @map("nama_menu")
+  path      String        @unique
+  icon      String?
+  groupMenu String?       @map("group_menu")
+  urutan    Int           @default(0)
+
+  roleMenus SecRoleMenu[]
+
+  @@map("sec_menu")
+}
+
+model SecRoleMenu {
+  id        Int      @id @default(autoincrement())
+  roleId    Int      @map("role_id")
+  menuId    Int      @map("menu_id")
+  canView   Boolean  @default(true) @map("can_view")
+  canCreate Boolean  @default(false) @map("can_create")
+  canEdit   Boolean  @default(false) @map("can_edit")
+  canDelete Boolean  @default(false) @map("can_delete")
+
+  role      SecRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  menu      SecMenu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, menuId])
+  @@map("sec_role_menu")
+}
+
+// ==========================================
+// 2. IDENTITAS & KONFIGURASI TEMA LEMBAGA
+// ==========================================
+
+model SekolahProfil {
+  id               Int      @id @default(autoincrement())
+  namaSekolah      String   @default("Sistem Manajemen Sekolah") @map("nama_sekolah")
+  npsn             String?
+  bentukPendidikan String?  @default("Multi-Jenjang") @map("bentuk_pendidikan")
+  sejarah          String?  @db.Text
+  visiMisi         String?  @map("visi_misi") @db.Text
+  alamat           String?  @db.Text
+  telepon          String?
+  email            String?
+  website          String?
+  logoUrl          String?  @map("logo_url")
+  faviconUrl       String?  @map("favicon_url")
+
+  // Konfigurasi Dynamic Theming (CSS Variables)
+  warnaPrimary     String   @default("#5d87ff") @map("warna_primary")
+  warnaPrimaryDark String   @default("#4570ea") @map("warna_primary_dark")
+  warnaAccent      String   @default("#13deb9") @map("warna_accent")
+  warnaSidebarStart String? @map("warna_sidebar_start")
+  warnaSidebarEnd   String? @map("warna_sidebar_end")
+  temaPreset       String   @default("default") @map("tema_preset")
+
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("sekolah_profil")
+}
+
+// ==========================================
+// 3. MASTER AKADEMIK & HIERARKI JENJANG
+// ==========================================
+
+model RefJenjang {
+  id        Int          @id @default(autoincrement())
+  kode      String       @unique // e.g. "SD", "SMP", "SMA", "SMK"
+  nama      String       // e.g. "Sekolah Menengah Kejuruan"
+  urutan    Int          @default(1)
+  active    Boolean      @default(true)
+
+  tingkat   RefTingkat[]
+  jurusan   Jurusan[]
+  kelas     Kelas[]
+  siswa     Siswa[]
+  sppTarif  SppTarif[]
+
+  @@map("ref_jenjang")
+}
+
+model RefTingkat {
+  id        Int         @id @default(autoincrement())
+  jenjangId Int         @map("jenjang_id")
+  tingkat   String      // e.g. "VII", "VIII", "IX" atau "X", "XI", "XII"
+  urutan    Int         @default(1)
+
+  jenjang   RefJenjang  @relation(fields: [jenjangId], references: [id], onDelete: Cascade)
+  kelas     Kelas[]
+  sppTarif  SppTarif[]
+
+  @@map("ref_tingkat")
+}
+
+model Jurusan {
+  id          Int         @id @default(autoincrement())
+  jenjangId   Int         @map("jenjang_id")
+  kodeJurusan String      @map("kode_jurusan") // e.g. "RPL", "TKJ", "IPA", "IPS"
+  namaJurusan String      @map("nama_jurusan") // e.g. "Rekayasa Perangkat Lunak"
+  keterangan  String?
+  active      Boolean     @default(true)
+
+  jenjang     RefJenjang  @relation(fields: [jenjangId], references: [id], onDelete: Cascade)
+  kelas       Kelas[]
+  siswa       Siswa[]
+
+  @@map("jurusan")
+}
+
+model Kelas {
+  id             Int             @id @default(autoincrement())
+  jenjangId      Int             @map("jenjang_id")
+  tingkatId      Int             @map("tingkat_id")
+  jurusanId      Int?            @map("jurusan_id")
+  namaKelas      String          @map("nama_kelas") // e.g. "VII A", "X RPL 1"
+  waliKelas      String?         @map("wali_kelas")
+  tahunAjaran    String          @default("2024/2025") @map("tahun_ajaran")
+  kapasitas      Int             @default(36)
+  active         Boolean         @default(true)
+
+  jenjang        RefJenjang      @relation(fields: [jenjangId], references: [id], onDelete: Restrict)
+  tingkat        RefTingkat      @relation(fields: [tingkatId], references: [id], onDelete: Restrict)
+  jurusan        Jurusan?        @relation(fields: [jurusanId], references: [id], onDelete: SetNull)
+
+  siswa          Siswa[]
+  sppPembayaran  SppPembayaran[]
+
+  @@map("kelas")
+}
+
+// ==========================================
+// 4. KESISWAAN (DATA POKOK PESERTA DIDIK)
+// ==========================================
+
+model Siswa {
+  id            Int             @id @default(autoincrement())
+  jenjangId     Int             @map("jenjang_id")
+  kelasId       Int?            @map("kelas_id")
+  jurusanId     Int?            @map("jurusan_id")
+  nis           String          @unique
+  nisn          String?
+  nama          String
+  jenisKelamin  String          @map("jenis_kelamin") // "L" atau "P"
+  tahunMasuk    Int?            @map("tahun_masuk")
+  tahunKeluar   Int?            @map("tahun_keluar")
+  status        String          @default("aktif") // "aktif", "alumni", "mutasi", "drop_out"
+  tempatLahir   String?         @map("tempat_lahir")
+  tanggalLahir  DateTime?       @map("tanggal_lahir")
+  alamat        String?         @db.Text
+  telpSiswa     String?         @map("telp_siswa")
+  emailSiswa    String?         @map("email_siswa")
+  namaWali      String?         @map("nama_wali")
+  telpWali      String?         @map("telp_wali")
+  pekerjaanWali String?         @map("pekerjaan_wali")
+  hubunganWali  String?         @default("Orang Tua") @map("hubungan_wali")
+  prestasi      String?         @db.Text
+  fotoUrl       String?         @map("foto_url")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  jenjang       RefJenjang      @relation(fields: [jenjangId], references: [id], onDelete: Restrict)
+  kelas         Kelas?          @relation(fields: [kelasId], references: [id], onDelete: SetNull)
+  jurusan       Jurusan?        @relation(fields: [jurusanId], references: [id], onDelete: SetNull)
+
+  sppPembayaran SppPembayaran[]
+
+  @@map("siswa")
+}
+
+// ==========================================
+// 5. DATA PENDIDIK & TENAGA KEPENDIDIKAN
+// ==========================================
+
+model Pegawai {
+  id                Int      @id @default(autoincrement())
+  nip               String?  @unique
+  nama              String
+  jenisKelamin      String   @default("L") @map("jenis_kelamin")
+  jenisPegawai      String   @default("guru") @map("jenis_pegawai") // "guru", "staf_tu", "kepala_sekolah"
+  jabatan           String?
+  bidangStudi       String?  @map("bidang_studi")
+  kontak            String?
+  email             String?
+  alamat            String?  @db.Text
+  fotoUrl           String?  @map("foto_url")
+  statusKepegawaian String?  @default("tetap") @map("status_kepegawaian")
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("pegawai")
+}
+
+// ==========================================
+// 6. FINANSIAL & KASIR SPP 12 BULAN
+// ==========================================
+
+model SppTarif {
+  id          Int         @id @default(autoincrement())
+  jenjangId   Int         @map("jenjang_id")
+  tingkatId   Int?        @map("tingkat_id")
+  tahunAjaran String      @default("2024/2025") @map("tahun_ajaran")
+  namaTarif   String      @default("SPP Bulanan") @map("nama_tarif")
+  nominal     Decimal     @db.Decimal(12, 2)
+  keterangan  String?
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  jenjang     RefJenjang  @relation(fields: [jenjangId], references: [id], onDelete: Cascade)
+  tingkat     RefTingkat? @relation(fields: [tingkatId], references: [id], onDelete: SetNull)
+
+  @@map("spp_tarif")
+}
+
+model SppPembayaran {
+  id             Int       @id @default(autoincrement())
+  noTransaksi    String    @map("no_transaksi") // TRX-YYYYMMDD-XXXX
+  siswaId        Int       @map("siswa_id")
+  kelasId        Int?      @map("kelas_id")
+  tahunAjaran    String    @map("tahun_ajaran")
+  bulan          String    // "Juli", "Agustus", dst.
+  urutanBulan    Int       @map("urutan_bulan") // 1 s.d. 12
+  nominalTagihan Decimal   @default(0) @db.Decimal(12, 2) @map("nominal_tagihan")
+  diskon         Decimal   @default(0) @db.Decimal(12, 2)
+  nominalBayar   Decimal   @default(0) @db.Decimal(12, 2) @map("nominal_bayar")
+  tanggalBayar   DateTime  @default(now()) @map("tanggal_bayar")
+  metodeBayar    String    @default("Tunai") @map("metode_bayar") // "Tunai", "Transfer", "QRIS"
+  petugas        String?
+  keterangan     String?
+  status         String    @default("lunas") // "lunas", "void"
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  siswa          Siswa     @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  kelas          Kelas?    @relation(fields: [kelasId], references: [id], onDelete: SetNull)
+
+  @@index([noTransaksi])
+  @@map("spp_pembayaran")
+}
+
+// ==========================================
+// 7. KONTEN & PUBLIKASI (CMS & PORTAL PUBLIK)
+// ==========================================
+
+model Carousel {
+  id        Int      @id @default(autoincrement())
+  badge     String?  @default("Informasi Sekolah")
+  judul     String
+  deskripsi String?  @db.Text
+  fotoUrl   String?  @map("foto_url")
+  link1Text String?  @default("Pelajari Selengkapnya") @map("link_1_text")
+  link1Url  String?  @default("#profil") @map("link_1_url")
+  link2Text String?  @default("Hubungi Kami") @map("link_2_text")
+  link2Url  String?  @default("#kontak") @map("link_2_url")
+  urutan    Int      @default(1)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("carousel")
+}
+
+model Keunggulan {
+  id        Int      @id @default(autoincrement())
+  judul     String
+  deskripsi String?  @db.Text
+  icon      String   @default("Award") // BookOpen, Award, Building2, Trophy, Star, ShieldCheck, HeartHandshake, Compass
+  urutan    Int      @default(1)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("keunggulan")
+}
+
+model Berita {
+  id        Int      @id @default(autoincrement())
+  judul     String
+  slug      String   @unique
+  ringkasan String?  @db.Text
+  deskripsi String   @db.Text
+  fotoUrl   String?  @map("foto_url")
+  kategori  String?  @default("Pengumuman") // "Pengumuman", "Akademik", "Prestasi", "Kegiatan"
+  published Boolean  @default(true)
+  penulis   String?  @default("Admin Sekolah")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("berita")
+}
+
+model Fasilitas {
+  id        Int      @id @default(autoincrement())
+  nama      String
+  deskripsi String?  @db.Text
+  fotoUrl   String?  @map("foto_url")
+  kondisi   String?  @default("Baik") // "Sangat Baik", "Baik", "Dalam Perbaikan"
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("fasilitas")
+}
+
+model Kegiatan {
+  id        Int       @id @default(autoincrement())
+  judul     String
+  deskripsi String?   @db.Text
+  fotoUrl   String?   @map("foto_url")
+  tanggal   DateTime?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("kegiatan")
+}
+
