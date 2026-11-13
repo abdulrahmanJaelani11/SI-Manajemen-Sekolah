@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { usePermission } from '@/context/PermissionContext'
 import {
   Sliders,
   Plus,
@@ -35,6 +36,11 @@ interface CarouselItem {
 }
 
 export default function CmsCarouselPage() {
+  const { canCreate, canEdit, canDelete } = usePermission()
+  const allowCreate = canCreate('/cms/carousel')
+  const allowEdit = canEdit('/cms/carousel')
+  const allowDelete = canDelete('/cms/carousel')
+
   const [carousels, setCarousels] = useState<CarouselItem[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -230,13 +236,15 @@ export default function CmsCarouselPage() {
             <Eye className="h-4 w-4" />
             <span>Lihat Portal Publik</span>
           </a>
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Tambah Slide Banner</span>
-          </button>
+          {allowCreate && (
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Tambah Slide Banner</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -292,13 +300,15 @@ export default function CmsCarouselPage() {
           <p className="mt-1 text-sm text-slate-500">
             Klik tombol &quot;Tambah Slide Banner&quot; untuk membuat slide hero portal utama.
           </p>
-          <button
-            onClick={handleOpenAdd}
-            className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Tambah Sekarang</span>
-          </button>
+          {allowCreate && (
+            <button
+              onClick={handleOpenAdd}
+              className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Tambah Sekarang</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -367,43 +377,69 @@ export default function CmsCarouselPage() {
 
               {/* Toolbar Aksi Bawah */}
               <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-                <button
-                  type="button"
-                  onClick={() => handleToggleActive(item)}
-                  className={`flex items-center gap-1.5 text-xs font-semibold ${
-                    item.active
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-slate-400 dark:text-slate-500'
-                  }`}
-                >
-                  {item.active ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span>Aktif Tayang</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="h-4 w-4" />
-                      <span>Nonaktif</span>
-                    </>
-                  )}
-                </button>
+                {allowEdit ? (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleActive(item)}
+                    className={`flex items-center gap-1.5 text-xs font-semibold ${
+                      item.active
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-400 dark:text-slate-500'
+                    }`}
+                  >
+                    {item.active ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>Aktif Tayang</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-4 w-4" />
+                        <span>Nonaktif</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <span
+                    className={`flex items-center gap-1.5 text-xs font-semibold ${
+                      item.active
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-400 dark:text-slate-500'
+                    }`}
+                  >
+                    {item.active ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>Aktif Tayang</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-4 w-4" />
+                        <span>Nonaktif</span>
+                      </>
+                    )}
+                  </span>
+                )}
 
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleOpenEdit(item)}
-                    className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                  >
-                    <Edit3 className="h-3.5 w-3.5 text-blue-500" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm transition hover:bg-red-50 dark:border-red-900/40 dark:bg-slate-800 dark:text-red-400"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span>Hapus</span>
-                  </button>
+                  {allowEdit && (
+                    <button
+                      onClick={() => handleOpenEdit(item)}
+                      className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    >
+                      <Edit3 className="h-3.5 w-3.5 text-blue-500" />
+                      <span>Edit</span>
+                    </button>
+                  )}
+                  {allowDelete && (
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm transition hover:bg-red-50 dark:border-red-900/40 dark:bg-slate-800 dark:text-red-400"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Hapus</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

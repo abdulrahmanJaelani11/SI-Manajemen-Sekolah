@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { usePermission } from '@/context/PermissionContext'
 import {
   Newspaper,
   Plus,
@@ -36,6 +37,11 @@ interface BeritaItem {
 const KATEGORI_LIST = ['Semua', 'Pengumuman', 'Akademik', 'Prestasi', 'Kegiatan']
 
 export default function CmsBeritaPage() {
+  const { canCreate, canEdit, canDelete } = usePermission()
+  const allowCreate = canCreate('/cms/berita')
+  const allowEdit = canEdit('/cms/berita')
+  const allowDelete = canDelete('/cms/berita')
+
   const [beritaList, setBeritaList] = useState<BeritaItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -242,13 +248,15 @@ export default function CmsBeritaPage() {
             <Eye className="h-4 w-4" />
             <span>Lihat Halaman Publik</span>
           </a>
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Tulis Berita Baru</span>
-          </button>
+          {allowCreate && (
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Tulis Berita Baru</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -301,13 +309,15 @@ export default function CmsBeritaPage() {
           <p className="mt-1 text-sm text-slate-500">
             Mulai tulis artikel berita atau pengumuman pertama Anda.
           </p>
-          <button
-            onClick={handleOpenAdd}
-            className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Tulis Sekarang</span>
-          </button>
+          {allowCreate && (
+            <button
+              onClick={handleOpenAdd}
+              className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Tulis Sekarang</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -375,27 +385,49 @@ export default function CmsBeritaPage() {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePublish(item)}
-                        className={`flex items-center gap-1 text-xs font-semibold ${
-                          item.published
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-amber-600 dark:text-amber-400'
-                        }`}
-                      >
-                        {item.published ? (
-                          <>
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            <span>Terbit</span>
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>Draf</span>
-                          </>
-                        )}
-                      </button>
+                      {allowEdit ? (
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePublish(item)}
+                          className={`flex items-center gap-1 text-xs font-semibold ${
+                            item.published
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-amber-600 dark:text-amber-400'
+                          }`}
+                        >
+                          {item.published ? (
+                            <>
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              <span>Terbit</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="h-3.5 w-3.5" />
+                              <span>Draf</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <span
+                          className={`flex items-center gap-1 text-xs font-semibold ${
+                            item.published
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-amber-600 dark:text-amber-400'
+                          }`}
+                        >
+                          {item.published ? (
+                            <>
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              <span>Terbit</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="h-3.5 w-3.5" />
+                              <span>Draf</span>
+                            </>
+                          )}
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -408,20 +440,24 @@ export default function CmsBeritaPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </a>
-                        <button
-                          onClick={() => handleOpenEdit(item)}
-                          className="rounded-lg p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-blue-950/40"
-                          title="Edit Berita"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          className="rounded-lg p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/40"
-                          title="Hapus Berita"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {allowEdit && (
+                          <button
+                            onClick={() => handleOpenEdit(item)}
+                            className="rounded-lg p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-blue-950/40"
+                            title="Edit Berita"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                        )}
+                        {allowDelete && (
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="rounded-lg p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/40"
+                            title="Hapus Berita"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

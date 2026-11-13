@@ -48,7 +48,7 @@ const Notifications = () => {
                         src={item.avatar}
                         width={45}
                         height={45}
-                        alt='tailwindadmin'
+                        alt={item.title || 'notifikasi'}
                         className='rounded-full'
                       />
                     </span>

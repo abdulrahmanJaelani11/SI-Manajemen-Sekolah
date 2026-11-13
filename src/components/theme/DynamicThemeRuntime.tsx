@@ -68,6 +68,19 @@ export default function DynamicThemeRuntime() {
           }
           applyThemeVariables(config)
           localStorage.setItem('school_theme_config', JSON.stringify(config))
+
+          // Sinkronkan cache identitas sekolah & title tab
+          if (json.data.namaSekolah) {
+            localStorage.setItem(
+              'school_profile_cache',
+              JSON.stringify({
+                namaSekolah: json.data.namaSekolah,
+                npsn: json.data.npsn || null,
+                logoUrl: json.data.logoUrl || null,
+              })
+            )
+            document.title = `${json.data.namaSekolah} | Sistem Informasi Sekolah`
+          }
         }
       } catch (err) {
         console.error('Failed to load school theme from server:', err)
@@ -84,10 +97,18 @@ export default function DynamicThemeRuntime() {
       }
     }
 
+    const handleProfileUpdate = (e: CustomEvent<{ namaSekolah?: string; npsn?: string; logoUrl?: string }>) => {
+      if (e.detail?.namaSekolah) {
+        document.title = `${e.detail.namaSekolah} | Sistem Informasi Sekolah`
+      }
+    }
+
     window.addEventListener('school-theme-updated' as any, handleThemeUpdate as any)
+    window.addEventListener('school-profile-updated' as any, handleProfileUpdate as any)
 
     return () => {
       window.removeEventListener('school-theme-updated' as any, handleThemeUpdate as any)
+      window.removeEventListener('school-profile-updated' as any, handleProfileUpdate as any)
     }
   }, [])
 

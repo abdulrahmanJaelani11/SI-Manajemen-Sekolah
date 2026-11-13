@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import { usePermission } from '@/context/PermissionContext'
 import {
   Shield,
   ShieldCheck,
@@ -38,6 +39,11 @@ interface RoleItem {
 }
 
 export default function ManajemenRolePage() {
+  const { canCreate, canEdit, canDelete } = usePermission()
+  const allowCreate = canCreate('/pengaturan/role')
+  const allowEdit = canEdit('/pengaturan/role')
+  const allowDelete = canDelete('/pengaturan/role')
+
   const [roles, setRoles] = useState<RoleItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -292,13 +298,15 @@ export default function ManajemenRolePage() {
             Buka Matriks Hak Akses
           </Link>
 
-          <button
-            onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 active:scale-95 transition-all"
-          >
-            <Plus className="h-4 w-4" />
-            Tambah Peran Baru
-          </button>
+          {allowCreate && (
+            <button
+              onClick={handleOpenAdd}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 active:scale-95 transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              Tambah Peran Baru
+            </button>
+          )}
         </div>
       </div>
 
@@ -533,27 +541,31 @@ export default function ManajemenRolePage() {
                           </Link>
 
                           {/* Tombol Edit */}
-                          <button
-                            onClick={() => handleOpenEdit(role)}
-                            title="Edit Data Peran"
-                            className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-400 transition-colors"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
+                          {allowEdit && (
+                            <button
+                              onClick={() => handleOpenEdit(role)}
+                              title="Edit Data Peran"
+                              className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-400 transition-colors"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
 
                           {/* Tombol Hapus */}
-                          <button
-                            onClick={() => handleOpenDelete(role)}
-                            disabled={isProtected}
-                            title={isProtected ? 'Peran sistem tidak dapat dihapus' : 'Hapus Peran'}
-                            className={`inline-flex items-center justify-center rounded-lg p-1.5 transition-colors ${
-                              isProtected
-                                ? 'cursor-not-allowed opacity-30 text-slate-400'
-                                : 'text-slate-600 hover:bg-rose-50 hover:text-rose-600 dark:text-slate-400 dark:hover:bg-rose-950/50 dark:hover:text-rose-400'
-                            }`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {allowDelete && (
+                            <button
+                              onClick={() => handleOpenDelete(role)}
+                              disabled={isProtected}
+                              title={isProtected ? 'Peran sistem tidak dapat dihapus' : 'Hapus Peran'}
+                              className={`inline-flex items-center justify-center rounded-lg p-1.5 transition-colors ${
+                                isProtected
+                                  ? 'cursor-not-allowed opacity-30 text-slate-400'
+                                  : 'text-slate-600 hover:bg-rose-50 hover:text-rose-600 dark:text-slate-400 dark:hover:bg-rose-950/50 dark:hover:text-rose-400'
+                              }`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

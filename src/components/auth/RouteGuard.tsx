@@ -1,7 +1,7 @@
 'use client'
 
-import React from 'react'
-import { usePathname } from 'next/navigation'
+import React, { useEffect } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { usePermission } from '@/context/PermissionContext'
 import {
@@ -15,14 +15,33 @@ import {
 
 export default function RouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { user, loading, canView, logout } = usePermission()
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push(`/auth/login?redirect=${encodeURIComponent(pathname)}`)
+    }
+  }, [loading, user, pathname, router])
 
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex items-center gap-3 text-slate-500">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <span className="text-sm font-medium">Memverifikasi otorisasi peran...</span>
+          <span className="text-sm font-medium">Memverifikasi otentikasi sesi...</span>
+        </div>
+      </div>
+    )
+  }
+
+  // Pengguna belum login
+  if (!user) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-500">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-sm font-medium">Mengarahkan ke halaman login...</span>
         </div>
       </div>
     )

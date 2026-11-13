@@ -501,7 +501,7 @@ export default async function PortalHomePage() {
               <span className="inline-block rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 px-3.5 py-1 text-xs font-bold tracking-wide uppercase">
                 Hubungi & Kunjungi Kampus
               </span>
-              <h2 className="text-2xl sm:text-4xl font-black leading-tight">
+              <h2 className="text-2xl sm:text-4xl font-black leading-tight text-white">
                 Mari Menjadi Bagian Dari Generasi Berprestasi Bersama Kami
               </h2>
               <p className="text-sm text-blue-100 max-w-xl">

@@ -2,12 +2,16 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
 import { BULAN_AKADEMIK } from '@/lib/terbilang'
+import { requireAuth } from '@/lib/auth/api-guard'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAuth(request)
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const siswaId = parseInt(id, 10)
     if (isNaN(siswaId)) return apiError('ID siswa tidak valid', 400)
@@ -123,6 +127,61 @@ export async function GET(
     const totalTerbayar = monthsStatus.filter((m) => m.status === 'paid').length
     const totalTunggakanBulan = 12 - totalTerbayar
     const totalEstimasiTunggakan = totalTunggakanBulan * tarifNominal
+    const totalNominalTerbayar = payments.reduce((acc, p) => acc + Number(p.nominalBayar), 0)
+
+    // Riwayat transaksi per kuitansi
+    const txMap = new Map<string, any>()
+    for (const p of payments) {
+      if (!txMap.has(p.noTransaksi)) {
+        txMap.set(p.noTransaksi, {
+          noTransaksi: p.noTransaksi,
+          tanggalBayar: p.tanggalBayar,
+          metodeBayar: p.metodeBayar,
+          petugas: p.petugas,
+          keterangan: p.keterangan,
+          totalNominal: 0,
+          totalDiskon: 0,
+          bulanItems: [],
+        })
+      }
+      const tx = txMap.get(p.noTransaksi)
+      tx.bulanItems.push({
+        bulan: p.bulan,
+        urutanBulan: p.urutanBulan,
+        nominalTagihan: Number(p.nominalTagihan),
+        diskon: Number(p.diskon),
+        nominalBayar: Number(p.nominalBayar),
+      })
+      tx.totalNominal += Number(p.nominalBayar)
+      tx.totalDiskon += Number(p.diskon)
+    }
+
+    const riwayatTransaksi = Array.from(txMap.values()).sort(
+      (a, b) => new Date(b.tanggalBayar).getTime() - new Date(a.tanggalBayar).getTime()
+    )
+
+    // Daftar Tahun Ajaran yang tersedia
+    const [tarifYears, paymentYears] = await Promise.all([
+      prisma.sppTarif.findMany({
+        where: { jenjangId: siswa.jenjangId },
+        select: { tahunAjaran: true },
+        distinct: ['tahunAjaran'],
+      }),
+      prisma.sppPembayaran.findMany({
+        where: { siswaId },
+        select: { tahunAjaran: true },
+        distinct: ['tahunAjaran'],
+      }),
+    ])
+
+    const listTahunAjaran = Array.from(
+      new Set([
+        '2024/2025',
+        '2023/2024',
+        ...tarifYears.map((t) => t.tahunAjaran),
+        ...paymentYears.map((p) => p.tahunAjaran),
+      ])
+    ).sort().reverse()
 
     return apiSuccess({
       message: 'Status 12 bulan SPP siswa berhasil dimuat',
@@ -131,9 +190,12 @@ export async function GET(
         tahunAjaran,
         tarifNominal,
         months: monthsStatus,
+        riwayatTransaksi,
+        listTahunAjaran,
         summary: {
           totalBulanTerbayar: totalTerbayar,
           totalBulanTunggakan: totalTunggakanBulan,
+          totalNominalTerbayar,
           totalEstimasiTunggakan,
         },
       },

@@ -2,14 +2,24 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
 import { BULAN_AKADEMIK } from '@/lib/terbilang'
+import { requireAuth } from '@/lib/auth/api-guard'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAuth(request)
+    if (auth.errorResponse) return auth.errorResponse
+
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
 
     const todayEnd = new Date()
     todayEnd.setHours(23, 59, 59, 999)
+
+    const activePeriod = await prisma.tahunAjaran.findFirst({
+      where: { isActive: true },
+      orderBy: { id: 'desc' },
+    })
+    const activeYearName = activePeriod?.nama || '2024/2025'
 
     const [
       totalSiswaAktif,
@@ -74,11 +84,11 @@ export async function GET() {
         select: { id: true, jenjangId: true, kelasId: true, kelas: { select: { tingkatId: true } } },
       }),
       prisma.sppPembayaran.findMany({
-        where: { status: 'lunas', tahunAjaran: '2024/2025' },
+        where: { status: 'lunas', tahunAjaran: activeYearName },
         select: { siswaId: true, urutanBulan: true },
       }),
       prisma.sppTarif.findMany({
-        where: { active: true, tahunAjaran: '2024/2025' },
+        where: { active: true, tahunAjaran: activeYearName },
       }),
       prisma.sekolahProfil.findFirst(),
     ])
@@ -111,7 +121,7 @@ export async function GET() {
     // Hitung tren penerimaan kas SPP per bulan akademik (Juli s.d. Juni)
     const bulananAgg = await prisma.sppPembayaran.groupBy({
       by: ['urutanBulan'],
-      where: { status: 'lunas', tahunAjaran: '2024/2025' },
+      where: { status: 'lunas', tahunAjaran: activeYearName },
       _sum: { nominalBayar: true },
     })
 
@@ -142,6 +152,7 @@ export async function GET() {
       message: 'Statistik dashboard berhasil dimuat',
       data: {
         sekolah: sekolahProfil,
+        tahunAjaranAktif: activePeriod || { nama: activeYearName, semester: 'Ganjil' },
         akademik: {
           totalSiswaAktif,
           totalPegawai,

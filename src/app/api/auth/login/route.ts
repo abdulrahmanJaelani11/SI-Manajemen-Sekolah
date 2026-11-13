@@ -1,11 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { comparePassword } from '@/lib/auth/password'
 import { signToken } from '@/lib/auth/jwt'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { getClientIp, checkRateLimit, resetRateLimit } from '@/lib/auth/rate-limiter'
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request)
+    const rateLimitKey = `login_admin_${ip}`
+    const rateCheck = checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000)
+
+    if (!rateCheck.allowed) {
+      return apiError(
+        `Terlalu banyak percobaan login gagal. Demi keamanan, silakan coba lagi dalam ${rateCheck.resetInSeconds} detik.`,
+        429
+      )
+    }
+
     const body = await request.json()
     const { username, password } = body
 
@@ -13,8 +25,10 @@ export async function POST(request: NextRequest) {
       return apiError('Username dan password wajib diisi', 400)
     }
 
+    const cleanUsername = String(username).trim()
+
     const user = await prisma.secUser.findUnique({
-      where: { username: String(username).trim() },
+      where: { username: cleanUsername },
       include: {
         role: {
           include: {
@@ -45,6 +59,9 @@ export async function POST(request: NextRequest) {
       return apiError('Username atau kata sandi tidak valid', 401)
     }
 
+    // Reset rate limiter setelah login berhasil
+    resetRateLimit(rateLimitKey)
+
     const tokenPayload = {
       userId: user.id,
       username: user.username,
@@ -53,7 +70,7 @@ export async function POST(request: NextRequest) {
       roleName: user.role.namaRole,
     }
 
-    const token = signToken(tokenPayload)
+    const token = signToken(tokenPayload, '1d')
 
     const permissions = user.role.roleMenus.map((rm) => ({
       menuPath: rm.menu.path,
@@ -76,13 +93,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Set cookie untuk SSR / middleware compatibility
+    // Set cookie untuk SSR / middleware compatibility (HttpOnly & Secure)
     response.cookies.set('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 hari
+      maxAge: 24 * 60 * 60, // 1 hari
     })
 
     return response

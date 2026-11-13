@@ -2,9 +2,13 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
 import { terbilang } from '@/lib/terbilang'
+import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/spp/kasir', 'create')
+    if (auth.errorResponse) return auth.errorResponse
+
     const body = await request.json()
     const {
       siswaId,
@@ -12,7 +16,7 @@ export async function POST(request: NextRequest) {
       bulanList,
       diskon = 0,
       metodeBayar = 'Tunai',
-      petugas = 'Kasir Tata Usaha',
+      petugas = auth.user.namaLengkap || 'Kasir Keuangan',
       keterangan,
     } = body
 

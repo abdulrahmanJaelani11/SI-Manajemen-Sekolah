@@ -56,8 +56,8 @@ const Header = () => {
             <Icon icon="tabler:menu-2" height={20} width={20} />
           </div>
 
-          <div className="block xl:hidden">
-            <FullLogo />
+          <div className="block xl:hidden max-w-[180px] sm:max-w-[260px]">
+            <FullLogo variant="default" />
           </div>
 
           <div className="flex xl:hidden items-center">

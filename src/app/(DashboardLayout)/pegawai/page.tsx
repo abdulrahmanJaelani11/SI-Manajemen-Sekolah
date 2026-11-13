@@ -17,6 +17,7 @@ import {
   Mail,
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
+import { usePermission } from '@/context/PermissionContext'
 
 interface Pegawai {
   id: number
@@ -35,6 +36,11 @@ interface Pegawai {
 }
 
 export default function PegawaiPage() {
+  const { canCreate, canEdit, canDelete } = usePermission()
+  const allowCreate = canCreate('/pegawai')
+  const allowEdit = canEdit('/pegawai')
+  const allowDelete = canDelete('/pegawai')
+
   const [pegawaiList, setPegawaiList] = useState<Pegawai[]>([])
   const [stats, setStats] = useState<any>({ total: 0, guru: 0, stafTu: 0, pimpinan: 0 })
   const [loading, setLoading] = useState(true)
@@ -218,13 +224,15 @@ export default function PegawaiPage() {
             Kelola data dewan guru pendidik, staf tata usaha, dan pimpinan sekolah.
           </p>
         </div>
-        <button
-          onClick={handleOpenAdd}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
-        >
-          <Plus className="h-4 w-4" />
-          Tambah Tenaga Pendidik / Pegawai
-        </button>
+        {allowCreate && (
+          <button
+            onClick={handleOpenAdd}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
+          >
+            <Plus className="h-4 w-4" />
+            Tambah Tenaga Pendidik / Pegawai
+          </button>
+        )}
       </div>
 
       {/* 4 Statistik Pegawai */}
@@ -409,20 +417,24 @@ export default function PegawaiPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleOpenEdit(p)}
-                          title="Edit Pegawai"
-                          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-amber-600 dark:hover:bg-slate-800 dark:hover:text-amber-400"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(p)}
-                          title="Hapus Pegawai"
-                          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-rose-600 dark:hover:bg-slate-800 dark:hover:text-rose-400"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {allowEdit && (
+                          <button
+                            onClick={() => handleOpenEdit(p)}
+                            title="Edit Pegawai"
+                            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-amber-600 dark:hover:bg-slate-800 dark:hover:text-amber-400"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        )}
+                        {allowDelete && (
+                          <button
+                            onClick={() => handleDelete(p)}
+                            title="Hapus Pegawai"
+                            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-rose-600 dark:hover:bg-slate-800 dark:hover:text-rose-400"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

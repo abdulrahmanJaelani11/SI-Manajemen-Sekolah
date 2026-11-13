@@ -1,9 +1,7 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
-import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'MAARIF_SUPER_SECRET_KEY_2024_2025'
+import { verifyToken, JwtPayloadSiswa } from '@/lib/auth/jwt'
 
 const BULAN_AKADEMIK = [
   { urutan: 1, nama: 'Juli' },
@@ -37,17 +35,13 @@ export async function GET(request: NextRequest) {
       return apiError('Sesi tidak terotentikasi', 401)
     }
 
-    let decoded: any
-    try {
-      decoded = jwt.verify(token, JWT_SECRET)
-    } catch {
-      return apiError('Token tidak valid', 401)
+    const decoded = verifyToken<JwtPayloadSiswa>(token)
+
+    if (!decoded || decoded.role !== 'siswa' || !decoded.siswaId) {
+      return apiError('Token tidak valid atau bukan sesi siswa', 401)
     }
 
     const siswaId = decoded.siswaId
-    if (!siswaId) {
-      return apiError('ID siswa tidak valid dalam token', 400)
-    }
 
     const { searchParams } = new URL(request.url)
     const tahunAjaran = searchParams.get('tahunAjaran') || '2024/2025'

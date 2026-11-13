@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function GET() {
   try {
@@ -20,6 +21,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/cms/kegiatan', 'create')
+    if (auth.errorResponse) return auth.errorResponse
+
     const body = await request.json()
     const { judul, deskripsi, fotoUrl, tanggal } = body
 
@@ -49,6 +53,9 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/cms/kegiatan', 'edit')
+    if (auth.errorResponse) return auth.errorResponse
+
     const body = await request.json()
     const { id, judul, deskripsi, fotoUrl, tanggal } = body
 
@@ -78,6 +85,9 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/cms/kegiatan', 'delete')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 

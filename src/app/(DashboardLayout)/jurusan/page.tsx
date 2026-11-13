@@ -12,6 +12,7 @@ import {
   Users,
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
+import { usePermission } from '@/context/PermissionContext'
 
 interface Jenjang {
   id: number
@@ -34,6 +35,11 @@ interface Jurusan {
 }
 
 export default function JurusanPage() {
+  const { canCreate, canEdit, canDelete } = usePermission()
+  const allowCreate = canCreate('/jurusan')
+  const allowEdit = canEdit('/jurusan')
+  const allowDelete = canDelete('/jurusan')
+
   const [jurusanList, setJurusanList] = useState<Jurusan[]>([])
   const [masterJenjang, setMasterJenjang] = useState<Jenjang[]>([])
   const [loading, setLoading] = useState(true)
@@ -170,13 +176,15 @@ export default function JurusanPage() {
             Kelola peminatan akademik dan kompetensi keahlian untuk jenjang pendidikan menengah (SMA/SMK).
           </p>
         </div>
-        <button
-          onClick={handleOpenAdd}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
-        >
-          <Plus className="h-4 w-4" />
-          Tambah Jurusan
-        </button>
+        {allowCreate && (
+          <button
+            onClick={handleOpenAdd}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
+          >
+            <Plus className="h-4 w-4" />
+            Tambah Jurusan
+          </button>
+        )}
       </div>
 
       {/* Filter Jenjang */}
@@ -280,20 +288,24 @@ export default function JurusanPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleOpenEdit(jur)}
-                          title="Edit Jurusan"
-                          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-amber-600 dark:hover:bg-slate-800 dark:hover:text-amber-400"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(jur)}
-                          title="Hapus Jurusan"
-                          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-rose-600 dark:hover:bg-slate-800 dark:hover:text-rose-400"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {allowEdit && (
+                          <button
+                            onClick={() => handleOpenEdit(jur)}
+                            title="Edit Jurusan"
+                            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-amber-600 dark:hover:bg-slate-800 dark:hover:text-amber-400"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        )}
+                        {allowDelete && (
+                          <button
+                            onClick={() => handleDelete(jur)}
+                            title="Hapus Jurusan"
+                            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-rose-600 dark:hover:bg-slate-800 dark:hover:text-rose-400"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -71,6 +71,14 @@ export default function TunggakanSppPage() {
 
   useEffect(() => {
     fetchMaster()
+    fetch('/api/akademik/tahun-ajaran/aktif')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data?.activePeriod?.nama) {
+          setTahunAjaran(json.data.activePeriod.nama)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   useEffect(() => {

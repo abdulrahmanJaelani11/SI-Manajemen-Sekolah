@@ -13,8 +13,8 @@ import { AlertCircle, LogIn, Lock, User } from 'lucide-react'
 
 export const Login = () => {
   const router = useRouter()
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('admin123')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -32,10 +32,10 @@ export const Login = () => {
       const json = await res.json()
 
       if (json.success) {
-        // Simpan data user ke localStorage jika perlu
+        // Hapus token legacy di localStorage jika ada (keamanan XSS)
         if (typeof window !== 'undefined') {
+          localStorage.removeItem('token')
           localStorage.setItem('user', JSON.stringify(json.data.user))
-          localStorage.setItem('token', json.data.token)
         }
         router.push('/')
         router.refresh()
@@ -110,9 +110,6 @@ export const Login = () => {
                     Ingat sesi saya
                   </Label>
                 </div>
-                <span className='text-muted-foreground text-[11px] font-mono'>
-                  Default: admin / admin123
-                </span>
               </div>
 
               <Button type='submit' disabled={loading} className='w-full gap-2 mt-2'>

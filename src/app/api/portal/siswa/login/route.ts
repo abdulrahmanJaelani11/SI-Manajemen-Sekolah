@@ -1,12 +1,22 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
-import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'MAARIF_SUPER_SECRET_KEY_2024_2025'
+import { signToken, JwtPayloadSiswa } from '@/lib/auth/jwt'
+import { getClientIp, checkRateLimit, resetRateLimit } from '@/lib/auth/rate-limiter'
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request)
+    const rateLimitKey = `login_siswa_${ip}`
+    const rateCheck = checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000)
+
+    if (!rateCheck.allowed) {
+      return apiError(
+        `Terlalu banyak percobaan login gagal. Demi keamanan, silakan coba lagi dalam ${rateCheck.resetInSeconds} detik.`,
+        429
+      )
+    }
+
     const body = await request.json()
     const { nis, credential } = body
 
@@ -14,8 +24,12 @@ export async function POST(request: NextRequest) {
       return apiError('Nomor Induk Siswa (NIS) wajib diisi', 400)
     }
 
+    if (!credential || !String(credential).trim()) {
+      return apiError('Tanggal lahir verifikasi wajib diisi', 400)
+    }
+
     const cleanNis = String(nis).trim()
-    const cleanCred = credential ? String(credential).trim() : ''
+    const cleanCred = String(credential).trim()
 
     // Cari data siswa berdasarkan NIS (atau NISN)
     const siswa = await prisma.siswa.findFirst({
@@ -44,45 +58,42 @@ export async function POST(request: NextRequest) {
       return apiError(`Akun siswa saat ini berstatus ${siswa.status}. Hubungi bagian kesiswaan sekolah.`, 403)
     }
 
-    // Verifikasi Kredensial Tanggal Lahir / Password / NISN
-    // Format fleksibel: YYYY-MM-DD, DD-MM-YYYY, DDMMYYYY, atau jika kosong/default
-    if (cleanCred) {
-      let isMatch = false
+    // Verifikasi Kredensial Tanggal Lahir
+    let isMatch = false
 
-      // 1. Cek kecocokan dengan Tanggal Lahir jika ada
-      if (siswa.tanggalLahir) {
-        const tgl = new Date(siswa.tanggalLahir)
-        const yyyy = tgl.getFullYear().toString()
-        const mm = String(tgl.getMonth() + 1).padStart(2, '0')
-        const dd = String(tgl.getDate()).padStart(2, '0')
+    if (siswa.tanggalLahir) {
+      const tgl = new Date(siswa.tanggalLahir)
+      const yyyy = tgl.getFullYear().toString()
+      const mm = String(tgl.getMonth() + 1).padStart(2, '0')
+      const dd = String(tgl.getDate()).padStart(2, '0')
 
-        const fmt1 = `${yyyy}-${mm}-${dd}` // 2016-12-11
-        const fmt2 = `${dd}-${mm}-${yyyy}` // 11-12-2016
-        const fmt3 = `${dd}${mm}${yyyy}`   // 11122016
-        const fmt4 = `${yyyy}${mm}${dd}`   // 20161211
+      const fmt1 = `${yyyy}-${mm}-${dd}` // 2016-12-11
+      const fmt2 = `${dd}-${mm}-${yyyy}` // 11-12-2016
+      const fmt3 = `${dd}${mm}${yyyy}`   // 11122016
+      const fmt4 = `${yyyy}${mm}${dd}`   // 20161211
 
-        if (
-          cleanCred === fmt1 ||
-          cleanCred === fmt2 ||
-          cleanCred === fmt3 ||
-          cleanCred === fmt4
-        ) {
-          isMatch = true
-        }
-      }
-
-      // 2. Cek kecocokan dengan NISN atau NIS
-      if (siswa.nisn && cleanCred === siswa.nisn) isMatch = true
-      if (cleanCred === siswa.nis) isMatch = true
-      if (cleanCred === '123456') isMatch = true // Master PIN
-
-      if (!isMatch) {
-        return apiError('Tanggal lahir atau kata sandi tidak cocok. Format contoh: 11-12-2016 atau 2016-12-11', 401)
+      if (
+        cleanCred === fmt1 ||
+        cleanCred === fmt2 ||
+        cleanCred === fmt3 ||
+        cleanCred === fmt4
+      ) {
+        isMatch = true
       }
     }
 
+    if (!isMatch) {
+      return apiError(
+        'Verifikasi tanggal lahir tidak cocok. Pastikan format tanggal sesuai (contoh: 11-12-2016 atau 2016-12-11).',
+        401
+      )
+    }
+
+    // Reset rate limiter setelah login berhasil
+    resetRateLimit(rateLimitKey)
+
     // Terbitkan token sesi siswa
-    const tokenPayload = {
+    const tokenPayload: JwtPayloadSiswa = {
       role: 'siswa',
       siswaId: siswa.id,
       nis: siswa.nis,
@@ -90,9 +101,7 @@ export async function POST(request: NextRequest) {
       kelasId: siswa.kelasId,
     }
 
-    const token = jwt.sign(tokenPayload, JWT_SECRET, {
-      expiresIn: '7d',
-    })
+    const token = signToken(tokenPayload, '1d')
 
     const response = apiSuccess({
       message: 'Login siswa berhasil',
@@ -120,13 +129,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Set cookie untuk SSR & sesi browser
+    // Set cookie untuk SSR & sesi browser (Secure & HttpOnly)
     response.cookies.set('siswa_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 7 * 24 * 60 * 60,
+      maxAge: 24 * 60 * 60, // 1 hari
     })
 
     return response

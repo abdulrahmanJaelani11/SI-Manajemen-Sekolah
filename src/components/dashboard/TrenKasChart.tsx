@@ -15,9 +15,10 @@ interface TrenKasChartProps {
     nominal: number
   }[]
   totalPenerimaan: number
+  tahunAjaran?: string
 }
 
-export default function TrenKasChart({ data, totalPenerimaan }: TrenKasChartProps) {
+export default function TrenKasChart({ data, totalPenerimaan, tahunAjaran = '2024/2025' }: TrenKasChartProps) {
   const [chartType, setChartType] = useState<'bar' | 'area'>('bar')
 
   const categories = data?.map((d) => d.bulan) || [
@@ -129,7 +130,7 @@ export default function TrenKasChart({ data, totalPenerimaan }: TrenKasChartProp
                 Tren Realisasi Kas Masuk SPP (12 Bulan)
               </h3>
               <p className="text-xs text-slate-500">
-                Penerimaan iuran bulanan tahun ajaran 2024/2025 (Juli s.d. Juni)
+                Penerimaan iuran bulanan tahun ajaran {tahunAjaran} (Juli s.d. Juni)
               </p>
             </div>
           </div>

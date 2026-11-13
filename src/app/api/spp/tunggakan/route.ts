@@ -2,9 +2,13 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
 import { BULAN_AKADEMIK } from '@/lib/terbilang'
+import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/spp/tunggakan', 'view')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { searchParams } = new URL(request.url)
     const jenjangId = searchParams.get('jenjangId')
     const kelasId = searchParams.get('kelasId')

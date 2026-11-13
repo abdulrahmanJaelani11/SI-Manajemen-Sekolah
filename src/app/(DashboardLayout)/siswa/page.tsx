@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import {
   Users,
   UserCheck,
@@ -20,6 +21,7 @@ import {
   Camera,
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
+import { usePermission } from '@/context/PermissionContext'
 
 interface Jenjang {
   id: number
@@ -82,6 +84,11 @@ interface StatsData {
 }
 
 export default function SiswaPage() {
+  const { canCreate, canEdit, canDelete } = usePermission()
+  const allowCreate = canCreate('/siswa')
+  const allowEdit = canEdit('/siswa')
+  const allowDelete = canDelete('/siswa')
+
   const [siswaList, setSiswaList] = useState<Siswa[]>([])
   const [stats, setStats] = useState<StatsData | null>(null)
   const [masterJenjang, setMasterJenjang] = useState<Jenjang[]>([])
@@ -97,10 +104,8 @@ export default function SiswaPage() {
 
   // Modals
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isImportOpen, setIsImportOpen] = useState(false)
   const [editingSiswa, setEditingSiswa] = useState<Siswa | null>(null)
-  const [viewingSiswa, setViewingSiswa] = useState<Siswa | null>(null)
 
   // Form State
   const [formData, setFormData] = useState<any>({
@@ -386,24 +391,28 @@ export default function SiswaPage() {
             <Download className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             Ekspor CSV
           </a>
-          <button
-            onClick={() => {
-              setImportFile(null)
-              setImportResult(null)
-              setIsImportOpen(true)
-            }}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-[#3B82F6] hover:text-[#1E3A8A] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition"
-          >
-            <Upload className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            Impor CSV
-          </button>
-          <button
-            onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:ring-offset-2 transition dark:bg-blue-600 dark:hover:bg-blue-500"
-          >
-            <Plus className="h-4 w-4" />
-            Tambah Siswa
-          </button>
+          {allowCreate && (
+            <>
+              <button
+                onClick={() => {
+                  setImportFile(null)
+                  setImportResult(null)
+                  setIsImportOpen(true)
+                }}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-[#3B82F6] hover:text-[#1E3A8A] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition"
+              >
+                <Upload className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                Impor CSV
+              </button>
+              <button
+                onClick={handleOpenAdd}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:ring-offset-2 transition dark:bg-blue-600 dark:hover:bg-blue-500"
+              >
+                <Plus className="h-4 w-4" />
+                Tambah Siswa
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -608,9 +617,12 @@ export default function SiswaPage() {
                           </div>
                         )}
                         <div>
-                          <p className="font-semibold text-slate-900 dark:text-white">
+                          <Link
+                            href={`/siswa/${siswa.id}`}
+                            className="font-semibold text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 transition-colors"
+                          >
                             {siswa.nama}
-                          </p>
+                          </Link>
                           <p className="text-xs text-slate-500">
                             Masuk: {siswa.tahunMasuk || '-'}
                           </p>
@@ -666,30 +678,31 @@ export default function SiswaPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => {
-                            setViewingSiswa(siswa)
-                            setIsDetailOpen(true)
-                          }}
-                          title="Lihat Detail Siswa"
-                          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-blue-400"
+                        <Link
+                          href={`/siswa/${siswa.id}`}
+                          title="Lihat Detail Lengkap & SPP Siswa"
+                          className="rounded-lg p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-blue-400 transition-colors"
                         >
                           <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenEdit(siswa)}
-                          title="Ubah Data Siswa"
-                          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-amber-600 dark:hover:bg-slate-800 dark:hover:text-amber-400"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSiswa(siswa)}
-                          title="Hapus Siswa"
-                          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-rose-600 dark:hover:bg-slate-800 dark:hover:text-rose-400"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        </Link>
+                        {allowEdit && (
+                          <button
+                            onClick={() => handleOpenEdit(siswa)}
+                            title="Ubah Data Siswa"
+                            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-amber-600 dark:hover:bg-slate-800 dark:hover:text-amber-400"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        )}
+                        {allowDelete && (
+                          <button
+                            onClick={() => handleDeleteSiswa(siswa)}
+                            title="Hapus Siswa"
+                            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-rose-600 dark:hover:bg-slate-800 dark:hover:text-rose-400"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1042,123 +1055,6 @@ export default function SiswaPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* ======================================================== */}
-      {/* MODAL DETAIL SISWA */}
-      {/* ======================================================== */}
-      {isDetailOpen && viewingSiswa && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
-            {/* Header Profil */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
-              <div className="flex items-center justify-between">
-                <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-                  Profil Peserta Didik
-                </span>
-                <button
-                  onClick={() => setIsDetailOpen(false)}
-                  className="rounded-full bg-white/10 p-1 text-white hover:bg-white/20"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mt-4 flex items-center gap-4">
-                {viewingSiswa.fotoUrl ? (
-                  <img
-                    src={viewingSiswa.fotoUrl}
-                    alt={viewingSiswa.nama}
-                    className="h-20 w-20 rounded-full border-4 border-white/30 object-cover shadow"
-                  />
-                ) : (
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white/30 bg-white/20 text-2xl font-bold">
-                    {viewingSiswa.nama.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <h3 className="text-xl font-bold">{viewingSiswa.nama}</h3>
-                  <p className="text-sm text-blue-100">
-                    NIS: {viewingSiswa.nis} {viewingSiswa.nisn ? `• NISN: ${viewingSiswa.nisn}` : ''}
-                  </p>
-                  <span className="mt-1 inline-block rounded-md bg-white/20 px-2 py-0.5 text-xs font-medium">
-                    {viewingSiswa.status.toUpperCase()} • {viewingSiswa.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Rincian Tab */}
-            <div className="max-h-[60vh] space-y-4 overflow-y-auto p-6">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Jenjang & Kelas</span>
-                  <p className="font-semibold text-slate-900 dark:text-white">
-                    {viewingSiswa.jenjang?.kode} - {viewingSiswa.kelas?.namaKelas || 'Belum ada kelas'}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Program Jurusan</span>
-                  <p className="font-semibold text-slate-900 dark:text-white">
-                    {viewingSiswa.jurusan ? viewingSiswa.jurusan.namaJurusan : 'Umum (Tidak Ada)'}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Tempat, Tgl Lahir</span>
-                  <p className="font-semibold text-slate-900 dark:text-white">
-                    {viewingSiswa.tempatLahir || '-'}{' '}
-                    {viewingSiswa.tanggalLahir ? `, ${new Date(viewingSiswa.tanggalLahir).toLocaleDateString('id-ID')}` : ''}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">No. Kontak Siswa</span>
-                  <p className="font-semibold text-slate-900 dark:text-white">
-                    {viewingSiswa.telpSiswa || '-'}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Wali Murid</span>
-                  <p className="font-semibold text-slate-900 dark:text-white">
-                    {viewingSiswa.namaWali || '-'} ({viewingSiswa.hubunganWali || 'Wali'})
-                  </p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">No. Kontak Wali</span>
-                  <p className="font-semibold text-slate-900 dark:text-white">
-                    {viewingSiswa.telpWali || '-'}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-xs text-slate-500 dark:text-slate-400">Alamat Tempat Tinggal</span>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">
-                  {viewingSiswa.alamat || '-'}
-                </p>
-              </div>
-
-              {viewingSiswa.prestasi && (
-                <div className="rounded-xl bg-amber-50 p-3 dark:bg-amber-950/40">
-                  <span className="text-xs font-semibold text-amber-800 dark:text-amber-300">
-                    Catatan Prestasi
-                  </span>
-                  <p className="mt-1 text-sm text-amber-900 dark:text-amber-200">
-                    {viewingSiswa.prestasi}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-3 dark:border-slate-800 dark:bg-slate-800/50">
-              <button
-                onClick={() => setIsDetailOpen(false)}
-                className="rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200"
-              >
-                Tutup
-              </button>
-            </div>
           </div>
         </div>
       )}

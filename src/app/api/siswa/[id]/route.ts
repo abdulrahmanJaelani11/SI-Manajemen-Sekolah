@@ -2,12 +2,16 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
 import storage from '@/lib/storage'
+import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requirePermission(request, '/siswa', 'view')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const siswaId = parseInt(id, 10)
     if (isNaN(siswaId)) return apiError('ID siswa tidak valid', 400)
@@ -25,6 +29,10 @@ export async function GET(
         sppPembayaran: {
           orderBy: [{ tahunAjaran: 'desc' }, { urutanBulan: 'desc' }],
           take: 12,
+        },
+        kedisiplinan: {
+          include: { kategori: true },
+          orderBy: [{ tanggal: 'desc' }, { id: 'desc' }],
         },
       },
     })
@@ -48,6 +56,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requirePermission(request, '/siswa', 'edit')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const siswaId = parseInt(id, 10)
     if (isNaN(siswaId)) return apiError('ID siswa tidak valid', 400)
@@ -145,6 +156,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requirePermission(request, '/siswa', 'delete')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const siswaId = parseInt(id, 10)
     if (isNaN(siswaId)) return apiError('ID siswa tidak valid', 400)

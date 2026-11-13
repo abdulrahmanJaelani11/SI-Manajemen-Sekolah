@@ -2,6 +2,9 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
 import { terbilang } from '@/lib/terbilang'
+import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { verifyToken, JwtPayloadSiswa } from '@/lib/auth/jwt'
+import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function GET(
   request: NextRequest,
@@ -10,6 +13,15 @@ export async function GET(
   try {
     const { noTransaksi } = await params
     if (!noTransaksi) return apiError('Nomor transaksi wajib disertakan', 400)
+
+    // Cek otentikasi: Staff pegawai atau Siswa terkait
+    const user = await getCurrentUser(request)
+    const siswaToken = request.cookies.get('siswa_token')?.value
+    const decodedSiswa = siswaToken ? verifyToken<JwtPayloadSiswa>(siswaToken) : null
+
+    if (!user && !decodedSiswa) {
+      return apiError('Otentikasi diperlukan untuk melihat kuitansi', 401)
+    }
 
     const [items, profilSekolah] = await Promise.all([
       prisma.sppPembayaran.findMany({
@@ -34,6 +46,12 @@ export async function GET(
     }
 
     const firstItem = items[0]
+
+    // Jika yang mengakses adalah siswa, pastikan kuitansi ini adalah miliknya sendiri (IDOR Protection)
+    if (!user && decodedSiswa && decodedSiswa.siswaId !== firstItem.siswaId) {
+      return apiError('Akses ditolak. Anda tidak berhak melihat kuitansi siswa lain.', 403)
+    }
+
     const totalTagihan = items.reduce((acc, i) => acc + Number(i.nominalTagihan), 0)
     const totalDiskon = items.reduce((acc, i) => acc + Number(i.diskon), 0)
     const totalDibayar = items.reduce((acc, i) => acc + Number(i.nominalBayar), 0)
@@ -79,6 +97,9 @@ export async function DELETE(
   { params }: { params: Promise<{ noTransaksi: string }> }
 ) {
   try {
+    const auth = await requirePermission(request, '/spp/riwayat', 'delete')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { noTransaksi } = await params
     if (!noTransaksi) return apiError('Nomor transaksi wajib disertakan', 400)
 

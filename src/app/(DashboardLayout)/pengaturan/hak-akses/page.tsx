@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { usePermission } from '@/context/PermissionContext'
 import {
   ShieldCheck,
   CheckSquare,
@@ -35,6 +36,9 @@ interface MatrixItem {
 }
 
 function HakAksesContent() {
+  const { canEdit } = usePermission()
+  const allowEdit = canEdit('/pengaturan/hak-akses') || canEdit('/pengaturan/role')
+
   const searchParams = useSearchParams()
   const queryRoleId = searchParams.get('roleId')
 
@@ -191,16 +195,27 @@ function HakAksesContent() {
             <Users className="h-4 w-4 text-slate-500" />
             Kelola Master Peran
           </Link>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-sm font-bold text-white shadow hover:bg-emerald-700 disabled:opacity-50 transition-all"
-          >
-            <Save className="h-4 w-4" />
-            {saving ? 'Menyimpan...' : 'Simpan Hak Akses'}
-          </button>
+          {allowEdit && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-sm font-bold text-white shadow hover:bg-emerald-700 disabled:opacity-50 transition-all"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? 'Menyimpan...' : 'Simpan Hak Akses'}
+            </button>
+          )}
         </div>
       </div>
+
+      {!allowEdit && (
+        <div className="flex items-center gap-2 rounded-xl bg-amber-50 p-3.5 text-xs font-medium text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/40">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>
+            Mode Lihat Saja: Akun Anda tidak memiliki hak akses [EDIT] untuk mengubah matriks perizinan peran sistem.
+          </span>
+        </div>
+      )}
 
       {/* Role Selector & Quick Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -223,7 +238,7 @@ function HakAksesContent() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleSelectAll(true)}
-            disabled={isAdminRole}
+            disabled={isAdminRole || !allowEdit}
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
           >
             <CheckSquare className="h-3.5 w-3.5 text-emerald-600" />
@@ -231,7 +246,7 @@ function HakAksesContent() {
           </button>
           <button
             onClick={() => handleSelectAll(false)}
-            disabled={isAdminRole}
+            disabled={isAdminRole || !allowEdit}
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
           >
             <Square className="h-3.5 w-3.5 text-rose-600" />
@@ -327,7 +342,7 @@ function HakAksesContent() {
                       <input
                         type="checkbox"
                         checked={m.canView}
-                        disabled={isAdminRole}
+                        disabled={isAdminRole || !allowEdit}
                         onChange={() => handleToggle(m.menuId, 'canView')}
                         className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                       />
@@ -338,7 +353,7 @@ function HakAksesContent() {
                       <input
                         type="checkbox"
                         checked={m.canCreate}
-                        disabled={isAdminRole}
+                        disabled={isAdminRole || !allowEdit}
                         onChange={() => handleToggle(m.menuId, 'canCreate')}
                         className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                       />
@@ -349,7 +364,7 @@ function HakAksesContent() {
                       <input
                         type="checkbox"
                         checked={m.canEdit}
-                        disabled={isAdminRole}
+                        disabled={isAdminRole || !allowEdit}
                         onChange={() => handleToggle(m.menuId, 'canEdit')}
                         className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                       />
@@ -360,14 +375,14 @@ function HakAksesContent() {
                       <input
                         type="checkbox"
                         checked={m.canDelete}
-                        disabled={isAdminRole}
+                        disabled={isAdminRole || !allowEdit}
                         onChange={() => handleToggle(m.menuId, 'canDelete')}
                         className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                       />
                     </td>
 
                     <td className="px-4 py-3 text-right">
-                      {!isAdminRole && (
+                      {!isAdminRole && allowEdit && (
                         <div className="flex items-center justify-end gap-1 text-[11px]">
                           <button
                             onClick={() => handleToggleRow(m.menuId, true)}

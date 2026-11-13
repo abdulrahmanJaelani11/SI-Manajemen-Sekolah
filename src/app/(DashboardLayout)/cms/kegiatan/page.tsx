@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { usePermission } from '@/context/PermissionContext'
 import {
   CalendarDays,
   Plus,
@@ -21,6 +22,11 @@ interface KegiatanItem {
 }
 
 export default function CmsKegiatanPage() {
+  const { canCreate, canEdit, canDelete } = usePermission()
+  const allowCreate = canCreate('/cms/kegiatan')
+  const allowEdit = canEdit('/cms/kegiatan')
+  const allowDelete = canDelete('/cms/kegiatan')
+
   const [kegiatan, setKegiatan] = useState<KegiatanItem[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -179,13 +185,15 @@ export default function CmsKegiatanPage() {
             <Eye className="h-4 w-4" />
             <span>Lihat Galeri Publik</span>
           </a>
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Tambah Kegiatan</span>
-          </button>
+          {allowCreate && (
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Tambah Kegiatan</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -206,13 +214,15 @@ export default function CmsKegiatanPage() {
           <p className="mt-1 text-sm text-slate-500">
             Mulai dokumentasikan agenda dan kemeriahan aktivitas siswa di sekolah.
           </p>
-          <button
-            onClick={handleOpenAdd}
-            className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Tambah Sekarang</span>
-          </button>
+          {allowCreate && (
+            <button
+              onClick={handleOpenAdd}
+              className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Tambah Sekarang</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -260,20 +270,24 @@ export default function CmsKegiatanPage() {
               </div>
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 p-4 dark:border-slate-800">
-                <button
-                  onClick={() => handleOpenEdit(item)}
-                  className="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                >
-                  <Edit3 className="h-3.5 w-3.5 text-blue-500" />
-                  <span>Edit</span>
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/40"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  <span>Hapus</span>
-                </button>
+                {allowEdit && (
+                  <button
+                    onClick={() => handleOpenEdit(item)}
+                    className="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    <Edit3 className="h-3.5 w-3.5 text-blue-500" />
+                    <span>Edit</span>
+                  </button>
+                )}
+                {allowDelete && (
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/40"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Hapus</span>
+                  </button>
+                )}
               </div>
             </div>
           ))}

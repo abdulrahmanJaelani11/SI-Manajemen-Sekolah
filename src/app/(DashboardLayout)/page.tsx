@@ -115,7 +115,7 @@ export default function DashboardPage() {
               {getGreeting()}, Administrator!
             </h1>
             <p className="mt-1 max-w-xl text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              {stats?.sekolah?.namaSekolah || 'Sistem Informasi Manajemen Sekolah Terpadu'} • Tahun Ajaran 2024/2025
+              {stats?.sekolah?.namaSekolah || 'Sistem Informasi Manajemen Sekolah Terpadu'} • Tahun Ajaran {stats?.tahunAjaranAktif?.nama || '2024/2025'} ({stats?.tahunAjaranAktif?.semester || 'Ganjil'})
             </p>
             <div className="mt-3.5 flex items-center gap-2">
               <a
@@ -283,6 +283,7 @@ export default function DashboardPage() {
           <TrenKasChart
             data={stats?.finansial?.trenPenerimaanBulanan}
             totalPenerimaan={stats?.finansial?.totalPenerimaan || 0}
+            tahunAjaran={stats?.tahunAjaranAktif?.nama}
           />
         </div>
 

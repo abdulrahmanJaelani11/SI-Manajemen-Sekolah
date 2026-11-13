@@ -115,11 +115,14 @@ model RefJenjang {
   urutan    Int          @default(1)
   active    Boolean      @default(true)
 
-  tingkat   RefTingkat[]
-  jurusan   Jurusan[]
-  kelas     Kelas[]
-  siswa     Siswa[]
-  sppTarif  SppTarif[]
+  tingkat        RefTingkat[]
+  jurusan        Jurusan[]
+  kelas          Kelas[]
+  siswa          Siswa[]
+  sppTarif       SppTarif[]
+  mataPelajaran  MataPelajaran[]
+  jamPelajaran   JamPelajaran[]
+  ppdbPendaftar  PpdbPendaftar[]
 
   @@map("ref_jenjang")
 }
@@ -138,39 +141,86 @@ model RefTingkat {
 }
 
 model Jurusan {
-  id          Int         @id @default(autoincrement())
-  jenjangId   Int         @map("jenjang_id")
-  kodeJurusan String      @map("kode_jurusan") // e.g. "RPL", "TKJ", "IPA", "IPS"
-  namaJurusan String      @map("nama_jurusan") // e.g. "Rekayasa Perangkat Lunak"
-  keterangan  String?
-  active      Boolean     @default(true)
+  id             Int             @id @default(autoincrement())
+  jenjangId      Int             @map("jenjang_id")
+  kodeJurusan    String          @map("kode_jurusan") // e.g. "RPL", "TKJ", "IPA", "IPS"
+  namaJurusan    String          @map("nama_jurusan") // e.g. "Rekayasa Perangkat Lunak"
+  keterangan     String?
+  active         Boolean         @default(true)
 
-  jenjang     RefJenjang  @relation(fields: [jenjangId], references: [id], onDelete: Cascade)
-  kelas       Kelas[]
-  siswa       Siswa[]
+  jenjang        RefJenjang      @relation(fields: [jenjangId], references: [id], onDelete: Cascade)
+  kelas          Kelas[]
+  siswa          Siswa[]
+  mataPelajaran  MataPelajaran[]
+  ppdbPendaftar  PpdbPendaftar[]
 
   @@map("jurusan")
 }
 
 model Kelas {
-  id             Int             @id @default(autoincrement())
-  jenjangId      Int             @map("jenjang_id")
-  tingkatId      Int             @map("tingkat_id")
-  jurusanId      Int?            @map("jurusan_id")
-  namaKelas      String          @map("nama_kelas") // e.g. "VII A", "X RPL 1"
-  waliKelas      String?         @map("wali_kelas")
-  tahunAjaran    String          @default("2024/2025") @map("tahun_ajaran")
-  kapasitas      Int             @default(36)
-  active         Boolean         @default(true)
+  id              Int                 @id @default(autoincrement())
+  jenjangId       Int                 @map("jenjang_id")
+  tingkatId       Int                 @map("tingkat_id")
+  jurusanId       Int?                @map("jurusan_id")
+  namaKelas       String              @map("nama_kelas") // e.g. "VII A", "X RPL 1"
+  waliKelas       String?             @map("wali_kelas")
+  tahunAjaran     String              @default("2024/2025") @map("tahun_ajaran")
+  kapasitas       Int                 @default(36)
+  active          Boolean             @default(true)
 
-  jenjang        RefJenjang      @relation(fields: [jenjangId], references: [id], onDelete: Restrict)
-  tingkat        RefTingkat      @relation(fields: [tingkatId], references: [id], onDelete: Restrict)
-  jurusan        Jurusan?        @relation(fields: [jurusanId], references: [id], onDelete: SetNull)
+  jenjang         RefJenjang          @relation(fields: [jenjangId], references: [id], onDelete: Restrict)
+  tingkat         RefTingkat          @relation(fields: [tingkatId], references: [id], onDelete: Restrict)
+  jurusan         Jurusan?            @relation(fields: [jurusanId], references: [id], onDelete: SetNull)
 
-  siswa          Siswa[]
-  sppPembayaran  SppPembayaran[]
+  siswa           Siswa[]
+  sppPembayaran   SppPembayaran[]
+  riwayatAsal     RiwayatKelasSiswa[] @relation("KelasAsal")
+  riwayatTujuan   RiwayatKelasSiswa[] @relation("KelasTujuan")
+  guruMapel       GuruMapelKelas[]
+  jadwalPelajaran JadwalPelajaran[]
+  nilaiSiswa      NilaiSiswa[]
+  raporSiswa      RaporSiswa[]
+  presensiSiswa   PresensiSiswa[]
 
   @@map("kelas")
+}
+
+// ==========================================
+// 3B. SIKLUS TAHUN AJARAN & RIWAYAT KELAS
+// ==========================================
+
+model TahunAjaran {
+  id             Int       @id @default(autoincrement())
+  nama           String    // e.g. "2024/2025", "2025/2026"
+  semester       String    @default("Ganjil") // "Ganjil" | "Genap"
+  tanggalMulai   DateTime? @map("tanggal_mulai")
+  tanggalSelesai DateTime? @map("tanggal_selesai")
+  isActive       Boolean   @default(false) @map("is_active")
+  keterangan     String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@unique([nama, semester])
+  @@map("tahun_ajaran")
+}
+
+model RiwayatKelasSiswa {
+  id                Int      @id @default(autoincrement())
+  siswaId           Int      @map("siswa_id")
+  kelasAsalId       Int?     @map("kelas_asal_id")
+  kelasTujuanId     Int?     @map("kelas_tujuan_id")
+  tahunAjaranAsal   String?  @map("tahun_ajaran_asal")
+  tahunAjaranTujuan String   @map("tahun_ajaran_tujuan")
+  jenisAksi         String   @map("jenis_aksi") // "naik_kelas", "pindah_kelas", "lulus"
+  catatan           String?
+  diprosesOleh      String?  @map("diproses_oleh")
+  tanggalProses     DateTime @default(now()) @map("tanggal_proses")
+
+  siswa       Siswa  @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  kelasAsal   Kelas? @relation("KelasAsal", fields: [kelasAsalId], references: [id], onDelete: SetNull)
+  kelasTujuan Kelas? @relation("KelasTujuan", fields: [kelasTujuanId], references: [id], onDelete: SetNull)
+
+  @@map("riwayat_kelas_siswa")
 }
 
 // ==========================================
@@ -203,11 +253,22 @@ model Siswa {
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
 
-  jenjang       RefJenjang      @relation(fields: [jenjangId], references: [id], onDelete: Restrict)
-  kelas         Kelas?          @relation(fields: [kelasId], references: [id], onDelete: SetNull)
-  jurusan       Jurusan?        @relation(fields: [jurusanId], references: [id], onDelete: SetNull)
+  jenjang       RefJenjang          @relation(fields: [jenjangId], references: [id], onDelete: Restrict)
+  kelas         Kelas?              @relation(fields: [kelasId], references: [id], onDelete: SetNull)
+  jurusan       Jurusan?            @relation(fields: [jurusanId], references: [id], onDelete: SetNull)
 
   sppPembayaran SppPembayaran[]
+  riwayatKelas  RiwayatKelasSiswa[]
+  nilaiSiswa    NilaiSiswa[]
+  raporSiswa    RaporSiswa[]
+  presensiSiswa PresensiSiswa[]
+  ppdbAsal      PpdbPendaftar?
+  kedisiplinan      KedisiplinanSiswa[]
+  mutasi            MutasiSiswa[]
+  alumniTracer      AlumniTracer?
+  tagihanNonSpp     TagihanSiswa[]
+  pembayaranTagihan PembayaranTagihan[]
+  peminjamanBuku    PustakaPeminjaman[]
 
   @@map("siswa")
 }
@@ -228,12 +289,226 @@ model Pegawai {
   email             String?
   alamat            String?  @db.Text
   fotoUrl           String?  @map("foto_url")
-  statusKepegawaian String?  @default("tetap") @map("status_kepegawaian")
-  active            Boolean  @default(true)
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  statusKepegawaian String?           @default("tetap") @map("status_kepegawaian")
+  active            Boolean           @default(true)
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  mengajarMapel     GuruMapelKelas[]
+  jadwalMengajar    JadwalPelajaran[]
+  nilaiDiberikan    NilaiSiswa[]
+  presensiPegawai   PresensiPegawai[]
+  ruanganPIC        SarprasRuangan[]  @relation("RuanganPIC")
+  barangPIC         SarprasBarang[]   @relation("BarangPIC")
 
   @@map("pegawai")
+}
+
+// ==========================================
+// 5B. KURIKULUM, MATA PELAJARAN & JADWAL
+// ==========================================
+
+model MataPelajaran {
+  id          Int               @id @default(autoincrement())
+  kode        String            @unique // e.g. "MTK-SD", "BIN-SMP"
+  nama        String
+  kelompok    String            @default("Umum") // "Umum", "Kejuruan", "Muatan Lokal", "Keagamaan"
+  kkm         Int               @default(75)
+  jenjangId   Int?              @map("jenjang_id")
+  jurusanId   Int?              @map("jurusan_id")
+  deskripsi   String?
+  active      Boolean           @default(true)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  jenjang     RefJenjang?       @relation(fields: [jenjangId], references: [id], onDelete: SetNull)
+  jurusan     Jurusan?          @relation(fields: [jurusanId], references: [id], onDelete: SetNull)
+  pengampu    GuruMapelKelas[]
+  jadwal      JadwalPelajaran[]
+  nilaiSiswa  NilaiSiswa[]
+
+  @@map("mata_pelajaran")
+}
+
+model GuruMapelKelas {
+  id           Int           @id @default(autoincrement())
+  kelasId      Int           @map("kelas_id")
+  mapelId      Int           @map("mapel_id")
+  guruId       Int           @map("guru_id")
+  tahunAjaran  String        @map("tahun_ajaran")
+  semester     String        @default("Ganjil")
+  jamPerMinggu Int           @default(2) @map("jam_per_minggu")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  kelas        Kelas         @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  mapel        MataPelajaran @relation(fields: [mapelId], references: [id], onDelete: Cascade)
+  guru         Pegawai       @relation(fields: [guruId], references: [id], onDelete: Cascade)
+
+  @@unique([kelasId, mapelId, tahunAjaran, semester])
+  @@map("guru_mapel_kelas")
+}
+
+model JamPelajaran {
+  id          Int               @id @default(autoincrement())
+  urutan      Int
+  namaSlot    String            @map("nama_slot") // e.g. "Jam ke-1", "Istirahat 1"
+  jamMulai    String            @map("jam_mulai") // e.g. "07:00"
+  jamSelesai  String            @map("jam_selesai") // e.g. "07:45"
+  isIstirahat Boolean           @default(false) @map("is_istirahat")
+  jenjangId   Int?              @map("jenjang_id")
+
+  jenjang     RefJenjang?       @relation(fields: [jenjangId], references: [id], onDelete: SetNull)
+  jadwal      JadwalPelajaran[]
+
+  @@map("jam_pelajaran")
+}
+
+model JadwalPelajaran {
+  id             Int           @id @default(autoincrement())
+  tahunAjaran    String        @map("tahun_ajaran")
+  semester       String        @default("Ganjil")
+  hari           String        // "Senin" | "Selasa" | "Rabu" | "Kamis" | "Jumat" | "Sabtu"
+  urutanHari     Int           @map("urutan_hari") // 1..6
+  jamPelajaranId Int           @map("jam_pelajaran_id")
+  kelasId        Int           @map("kelas_id")
+  mapelId        Int           @map("mapel_id")
+  guruId         Int           @map("guru_id")
+  ruangan        String?
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  jamPelajaran   JamPelajaran  @relation(fields: [jamPelajaranId], references: [id], onDelete: Cascade)
+  kelas          Kelas         @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  mapel          MataPelajaran @relation(fields: [mapelId], references: [id], onDelete: Cascade)
+  guru           Pegawai       @relation(fields: [guruId], references: [id], onDelete: Cascade)
+
+  @@unique([tahunAjaran, semester, hari, jamPelajaranId, kelasId])
+  @@map("jadwal_pelajaran")
+}
+
+// ==========================================
+// 5C. PENILAIAN SISWA & E-RAPOR SEMESTER
+// ==========================================
+
+model BobotPenilaian {
+  id          Int      @id @default(autoincrement())
+  tahunAjaran String   @map("tahun_ajaran")
+  semester    String   @default("Ganjil")
+  bobotTugas  Int      @default(40) @map("bobot_tugas")
+  bobotPts    Int      @default(25) @map("bobot_pts")
+  bobotPas    Int      @default(35) @map("bobot_pas")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([tahunAjaran, semester])
+  @@map("bobot_penilaian")
+}
+
+model NilaiSiswa {
+  id          Int           @id @default(autoincrement())
+  siswaId     Int           @map("siswa_id")
+  kelasId     Int           @map("kelas_id")
+  mapelId     Int           @map("mapel_id")
+  guruId      Int?          @map("guru_id")
+  tahunAjaran String        @map("tahun_ajaran")
+  semester    String        @default("Ganjil")
+  nilaiTugas  Float         @default(0) @map("nilai_tugas")
+  nilaiPts    Float         @default(0) @map("nilai_pts")
+  nilaiPas    Float         @default(0) @map("nilai_pas")
+  nilaiAkhir  Float         @default(0) @map("nilai_akhir")
+  predikat    String        @default("C") // "A", "B", "C", "D"
+  deskripsi   String?       @db.Text
+  updatedBy   String?       @map("updated_by")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  siswa       Siswa         @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  kelas       Kelas         @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  mapel       MataPelajaran @relation(fields: [mapelId], references: [id], onDelete: Cascade)
+  guru        Pegawai?      @relation(fields: [guruId], references: [id], onDelete: SetNull)
+
+  @@unique([siswaId, mapelId, tahunAjaran, semester])
+  @@map("nilai_siswa")
+}
+
+model RaporSiswa {
+  id              Int       @id @default(autoincrement())
+  siswaId         Int       @map("siswa_id")
+  kelasId         Int       @map("kelas_id")
+  tahunAjaran     String    @map("tahun_ajaran")
+  semester        String    @default("Ganjil")
+  sikapSpiritual  String?   @default("Baik") @map("sikap_spiritual")
+  sikapSosial     String?   @default("Baik") @map("sikap_sosial")
+  sakit           Int       @default(0)
+  izin            Int       @default(0)
+  alpa            Int       @default(0)
+  ekstrakurikuler String?   @db.Text
+  catatanWali     String?   @db.Text @map("catatan_wali")
+  keputusan       String?
+  status          String    @default("draft") // "draft" | "diterbitkan"
+  tanggalTerbit   DateTime? @map("tanggal_terbit")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  siswa           Siswa     @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  kelas           Kelas     @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+
+  @@unique([siswaId, tahunAjaran, semester])
+  @@map("rapor_siswa")
+}
+
+// ==========================================
+// 5D. MODUL ABSENSI & PRESENSI (SISWA & PEGAWAI)
+// ==========================================
+
+model PengaturanPresensi {
+  id                  Int      @id @default(autoincrement())
+  jamMasukSiswa       String   @default("07:15") @map("jam_masuk_siswa")
+  batasTerlambatSiswa Int      @default(0) @map("batas_terlambat_siswa")
+  jamPulangSiswa      String   @default("14:00") @map("jam_pulang_siswa")
+  jamMasukPegawai     String   @default("07:00") @map("jam_masuk_pegawai")
+  jamPulangPegawai    String   @default("15:30") @map("jam_pulang_pegawai")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("pengaturan_presensi")
+}
+
+model PresensiSiswa {
+  id         Int      @id @default(autoincrement())
+  siswaId    Int      @map("siswa_id")
+  kelasId    Int?     @map("kelas_id")
+  tanggal    DateTime @db.Date
+  status     String   @default("hadir") // "hadir", "terlambat", "sakit", "izin", "alpa"
+  jamMasuk   String?  @map("jam_masuk")
+  jamPulang  String?  @map("jam_pulang")
+  metode     String   @default("manual") // "qr_scan" | "manual"
+  keterangan String?
+  petugas    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  siswa      Siswa    @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  kelas      Kelas?   @relation(fields: [kelasId], references: [id], onDelete: SetNull)
+
+  @@unique([siswaId, tanggal])
+  @@map("presensi_siswa")
+}
+
+model PresensiPegawai {
+  id         Int      @id @default(autoincrement())
+  pegawaiId  Int      @map("pegawai_id")
+  tanggal    DateTime @db.Date
+  status     String   @default("hadir") // "hadir", "terlambat", "sakit", "izin", "cuti", "alpa"
+  jamMasuk   String?  @map("jam_masuk")
+  jamPulang  String?  @map("jam_pulang")
+  keterangan String?
+  petugas    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  pegawai    Pegawai  @relation(fields: [pegawaiId], references: [id], onDelete: Cascade)
+
+  @@unique([pegawaiId, tanggal])
+  @@map("presensi_pegawai")
 }
 
 // ==========================================
@@ -352,4 +627,456 @@ model Kegiatan {
 
   @@map("kegiatan")
 }
+
+// ==========================================
+// 8. PPDB ONLINE & PENERIMAAN SISWA BARU
+// ==========================================
+
+model PpdbGelombang {
+  id             Int             @id @default(autoincrement())
+  nama           String
+  tahunAjaran    String          @map("tahun_ajaran") // e.g. "2025/2026"
+  tanggalMulai   DateTime        @map("tanggal_mulai")
+  tanggalSelesai DateTime        @map("tanggal_selesai")
+  kuotaTotal     Int             @default(100) @map("kuota_total")
+  biayaDaftar    Decimal         @default(0) @db.Decimal(12, 2) @map("biaya_daftar")
+  syaratText     String?         @map("syarat_text") @db.Text
+  isActive       Boolean         @default(true) @map("is_active")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  pendaftar      PpdbPendaftar[]
+
+  @@map("ppdb_gelombang")
+}
+
+model PpdbPendaftar {
+  id               Int           @id @default(autoincrement())
+  noPendaftaran    String        @unique @map("no_pendaftaran")
+  gelombangId      Int           @map("gelombang_id")
+  jenjangId        Int           @map("jenjang_id")
+  jurusanId        Int?          @map("jurusan_id")
+  jalurPendaftaran String        @default("Reguler") @map("jalur_pendaftaran") // "Reguler", "Prestasi", "Afirmasi", "Zonasi"
+  nama             String
+  jenisKelamin     String        @map("jenis_kelamin") // "L" | "P"
+  nisn             String?
+  nik              String?
+  tempatLahir      String        @map("tempat_lahir")
+  tanggalLahir     DateTime      @map("tanggal_lahir")
+  alamat           String        @db.Text
+  asalSekolah      String        @map("asal_sekolah")
+  nilaiRataRapor   Float?        @map("nilai_rata_rapor")
+  noHpSiswa        String?       @map("no_hp_siswa")
+  emailSiswa       String?       @map("email_siswa")
+  namaWali         String        @map("nama_wali")
+  telpWali         String        @map("telp_wali")
+  pekerjaanWali    String?       @map("pekerjaan_wali")
+  hubunganWali     String        @default("Orang Tua") @map("hubungan_wali")
+  fotoUrl          String?       @map("foto_url")
+  berkasKkUrl      String?       @map("berkas_kk_url")
+  berkasIjazahUrl  String?       @map("berkas_ijazah_url")
+  statusSeleksi    String        @default("menunggu") @map("status_seleksi") // "menunggu", "verifikasi", "diterima", "cadangan", "ditolak"
+  catatanPanitia   String?       @map("catatan_panitia") @db.Text
+  siswaId          Int?          @unique @map("siswa_id")
+  diverifikasiOleh String?       @map("diverifikasi_oleh")
+  tanggalDaftar    DateTime      @default(now()) @map("tanggal_daftar")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  gelombang        PpdbGelombang @relation(fields: [gelombangId], references: [id], onDelete: Restrict)
+  jenjang          RefJenjang    @relation(fields: [jenjangId], references: [id], onDelete: Restrict)
+  jurusan          Jurusan?      @relation(fields: [jurusanId], references: [id], onDelete: SetNull)
+  siswa            Siswa?        @relation(fields: [siswaId], references: [id], onDelete: SetNull)
+
+  @@index([statusSeleksi])
+  @@index([gelombangId])
+  @@map("ppdb_pendaftar")
+}
+
+// ==========================================
+// 9. KEDISIPLINAN, POIN & BIMBINGAN KONSELING
+// ==========================================
+
+model KategoriPoinSiswa {
+  id        Int                 @id @default(autoincrement())
+  kode      String              @unique
+  nama      String
+  jenis     String              // "pelanggaran" | "prestasi"
+  tingkat   String              @default("ringan") // Pelanggaran: "ringan" | "sedang" | "berat"; Prestasi: "sekolah" | "kota" | "provinsi" | "nasional"
+  poin      Int                 @default(5)
+  active    Boolean             @default(true)
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  catatan   KedisiplinanSiswa[]
+
+  @@map("kategori_poin_siswa")
+}
+
+model KedisiplinanSiswa {
+  id           Int               @id @default(autoincrement())
+  siswaId      Int               @map("siswa_id")
+  kategoriId   Int               @map("kategori_id")
+  tanggal      DateTime          @default(now())
+  jenis        String            // "pelanggaran" | "prestasi"
+  poin         Int
+  deskripsi    String            @db.Text
+  tindakLanjut String?           @map("tindak_lanjut") @db.Text
+  statusBk     String            @default("tercatat") @map("status_bk") // "tercatat" | "pembinaan" | "selesai"
+  dicatatOleh  String?           @map("dicatat_oleh")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  siswa        Siswa             @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  kategori     KategoriPoinSiswa @relation(fields: [kategoriId], references: [id], onDelete: Restrict)
+
+  @@index([siswaId])
+  @@index([jenis])
+  @@map("kedisiplinan_siswa")
+}
+
+// ==========================================
+// 10. MUTASI SISWA & DIREKTORI ALUMNI
+// ==========================================
+
+model MutasiSiswa {
+  id                Int      @id @default(autoincrement())
+  siswaId           Int      @map("siswa_id")
+  jenisMutasi       String   @map("jenis_mutasi") // "keluar" | "masuk" | "drop_out"
+  tanggalMutasi     DateTime @map("tanggal_mutasi")
+  nomorSurat        String?  @map("nomor_surat")
+  sekolahAsalTujuan String?  @map("sekolah_asal_tujuan")
+  alasan            String   @db.Text
+  kelasTerakhir     String?  @map("kelas_terakhir")
+  diprosesOleh      String?  @map("diproses_oleh")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  siswa             Siswa    @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@index([siswaId])
+  @@index([jenisMutasi])
+  @@map("mutasi_siswa")
+}
+
+model AlumniTracer {
+  id             Int      @id @default(autoincrement())
+  siswaId        Int      @unique @map("siswa_id")
+  tahunLulus     Int      @map("tahun_lulus")
+  statusKarir    String   @default("belum_diketahui") @map("status_karir") // "kuliah" | "bekerja" | "wirausaha" | "melanjutkan_sekolah" | "belum_diketahui"
+  instansiTujuan String?  @map("instansi_tujuan")
+  jabatanJurusan String?  @map("jabatan_jurusan")
+  kontakTerbaru  String?  @map("kontak_terbaru")
+  emailTerbaru   String?  @map("email_terbaru")
+  kotaDomisili   String?  @map("kota_domisili")
+  catatan        String?  @db.Text
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  siswa          Siswa    @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@index([tahunLulus])
+  @@map("alumni_tracer")
+}
+
+// ==========================================
+// 11. KEUANGAN LANJUTAN: TAGIHAN NON-SPP
+// ==========================================
+
+model JenisTagihan {
+  id             Int            @id @default(autoincrement())
+  kode           String         @unique
+  nama           String
+  nominalDefault Decimal        @default(0) @db.Decimal(12, 2) @map("nominal_default")
+  bolehCicil     Boolean        @default(true) @map("boleh_cicil")
+  keterangan     String?
+  active         Boolean        @default(true)
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  tagihan        TagihanSiswa[]
+
+  @@map("jenis_tagihan")
+}
+
+model TagihanSiswa {
+  id             Int                 @id @default(autoincrement())
+  kodeTagihan    String              @unique @map("kode_tagihan")
+  siswaId        Int                 @map("siswa_id")
+  jenisId        Int                 @map("jenis_id")
+  tahunAjaran    String              @default("2024/2025") @map("tahun_ajaran")
+  judul          String
+  nominalTagihan Decimal             @db.Decimal(12, 2) @map("nominal_tagihan")
+  diskon         Decimal             @default(0) @db.Decimal(12, 2)
+  totalTerbayar  Decimal             @default(0) @db.Decimal(12, 2) @map("total_terbayar")
+  jatuhTempo     DateTime?           @map("jatuh_tempo")
+  status         String              @default("belum_bayar") // "belum_bayar" | "cicilan" | "lunas" | "batal"
+  keterangan     String?
+  dibuatOleh     String?             @map("dibuat_oleh")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  siswa          Siswa               @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  jenis          JenisTagihan        @relation(fields: [jenisId], references: [id], onDelete: Restrict)
+  pembayaran     PembayaranTagihan[]
+
+  @@index([siswaId])
+  @@index([status])
+  @@map("tagihan_siswa")
+}
+
+model PembayaranTagihan {
+  id           Int          @id @default(autoincrement())
+  noTransaksi  String       @unique @map("no_transaksi")
+  tagihanId    Int          @map("tagihan_id")
+  siswaId      Int          @map("siswa_id")
+  nominalBayar Decimal      @db.Decimal(12, 2) @map("nominal_bayar")
+  tanggalBayar DateTime     @default(now()) @map("tanggal_bayar")
+  metodeBayar  String       @default("Tunai") @map("metode_bayar") // "Tunai" | "Transfer" | "QRIS"
+  petugas      String?
+  keterangan   String?
+  status       String       @default("sah") // "sah" | "void"
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  tagihan      TagihanSiswa @relation(fields: [tagihanId], references: [id], onDelete: Cascade)
+  siswa        Siswa        @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@index([tagihanId])
+  @@index([siswaId])
+  @@map("pembayaran_tagihan")
+}
+
+// ==========================================
+// 12. KEUANGAN LANJUTAN: KAS UMUM & OPERASIONAL
+// ==========================================
+
+model KategoriKas {
+  id         Int            @id @default(autoincrement())
+  kode       String         @unique
+  nama       String
+  jenis      String         // "pemasukan" | "pengeluaran"
+  keterangan String?
+  active     Boolean        @default(true)
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  transaksi  KasTransaksi[]
+
+  @@map("kategori_kas")
+}
+
+model KasTransaksi {
+  id           Int         @id @default(autoincrement())
+  noBukti      String      @unique @map("no_bukti")
+  kategoriId   Int         @map("kategori_id")
+  jenis        String      // "pemasukan" | "pengeluaran"
+  tanggal      DateTime
+  nominal      Decimal     @db.Decimal(12, 2)
+  metode       String      @default("Tunai") // "Tunai" | "Bank / Transfer"
+  pihakTerkait String?     @map("pihak_terkait")
+  uraian       String      @db.Text
+  lampiranUrl  String?     @map("lampiran_url")
+  dicatatOleh  String?     @map("dicatat_oleh")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  kategori     KategoriKas @relation(fields: [kategoriId], references: [id], onDelete: Restrict)
+
+  @@index([jenis])
+  @@index([tanggal])
+  @@map("kas_transaksi")
+}
+
+// ==========================================
+// 13. PERPUSTAKAAN SEKOLAH & SIRKULASI QR
+// ==========================================
+
+model KategoriBuku {
+  id         Int           @id @default(autoincrement())
+  kode       String        @unique
+  nama       String
+  keterangan String?
+  active     Boolean       @default(true)
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  buku       PustakaBuku[]
+
+  @@map("pustaka_kategori")
+}
+
+model PustakaBuku {
+  id             Int                 @id @default(autoincrement())
+  kodeBuku       String              @unique @map("kode_buku") // BK-2026-0001
+  judul          String
+  pengarang      String?
+  penerbit       String?
+  tahunTerbit    Int?                @map("tahun_terbit")
+  isbn           String?
+  kategoriId     Int                 @map("kategori_id")
+  lokasiRak      String?             @map("lokasi_rak") // Rak A-1, Lemari B
+  jumlahTotal    Int                 @default(1) @map("jumlah_total")
+  jumlahTersedia Int                 @default(1) @map("jumlah_tersedia")
+  coverUrl       String?             @map("cover_url")
+  deskripsi      String?             @db.Text
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  kategori       KategoriBuku        @relation(fields: [kategoriId], references: [id], onDelete: Restrict)
+  peminjaman     PustakaPeminjaman[]
+
+  @@index([kategoriId])
+  @@index([judul])
+  @@map("pustaka_buku")
+}
+
+model PustakaPeminjaman {
+  id             Int         @id @default(autoincrement())
+  noPeminjaman   String      @unique @map("no_peminjaman") // PJM-202611-0001
+  bukuId         Int         @map("buku_id")
+  siswaId        Int         @map("siswa_id")
+  tanggalPinjam  DateTime    @default(now()) @map("tanggal_pinjam")
+  jatuhTempo     DateTime    @map("jatuh_tempo")
+  tanggalKembali DateTime?   @map("tanggal_kembali")
+  status         String      @default("dipinjam") // "dipinjam" | "kembali" | "terlambat" | "hilang"
+  denda          Decimal     @default(0) @db.Decimal(10, 2)
+  dendaDibayar   Boolean     @default(false) @map("denda_dibayar")
+  petugas        String?
+  catatan        String?
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  buku           PustakaBuku @relation(fields: [bukuId], references: [id], onDelete: Restrict)
+  siswa          Siswa       @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@index([bukuId])
+  @@index([siswaId])
+  @@index([status])
+  @@map("pustaka_peminjaman")
+}
+
+// ==========================================
+// 14. SARANA PRASARANA (SARPRAS) & ASET SEKOLAH
+// ==========================================
+
+model SarprasRuangan {
+  id          Int             @id @default(autoincrement())
+  kodeRuangan String          @unique @map("kode_ruangan") // e.g. "R-LAB-01", "R-KLS-7A"
+  namaRuangan String          @map("nama_ruangan")
+  gedung      String?         // "Gedung A (Utama)", "Gedung B (Lab)"
+  lantai      Int?            @default(1)
+  kapasitas   Int?            @default(36)
+  luasM2      Decimal?        @map("luas_m2") @db.Decimal(8, 2)
+  kategori    String          @default("kelas") // "kelas", "laboratorium", "perpustakaan", "kantor", "bengkel", "gudang", "olahraga", "ibadah", "lainnya"
+  kondisi     String          @default("baik") // "baik", "rusak_ringan", "rusak_berat", "renovasi"
+  pjPegawaiId Int?            @map("pj_pegawai_id")
+  keterangan  String?         @db.Text
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  pjPegawai   Pegawai?        @relation("RuanganPIC", fields: [pjPegawaiId], references: [id], onDelete: SetNull)
+  barang      SarprasBarang[]
+
+  @@index([kategori])
+  @@index([kondisi])
+  @@map("sarpras_ruangan")
+}
+
+model SarprasKategoriBarang {
+  id         Int             @id @default(autoincrement())
+  kode       String          @unique // MBL, ELK, LAB, KND, KLS, UMM
+  nama       String
+  keterangan String?
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  barang     SarprasBarang[]
+
+  @@map("sarpras_kategori_barang")
+}
+
+model SarprasBarang {
+  id                Int                   @id @default(autoincrement())
+  kodeBarang        String                @unique @map("kode_barang") // AST-202611-0001
+  namaBarang        String                @map("nama_barang")
+  kategoriId        Int                   @map("kategori_id")
+  ruanganId         Int?                  @map("ruangan_id")
+  merk              String?
+  spesifikasi       String?               @db.Text
+  noSeri            String?               @map("no_seri")
+  tahunPengadaan    Int?                  @map("tahun_pengadaan")
+  sumberDana        String?               @default("BOS Reguler") @map("sumber_dana")
+  hargaPerolehan    Decimal?              @default(0) @map("harga_perolehan") @db.Decimal(15, 2)
+  jumlahTotal       Int                   @default(1) @map("jumlah_total")
+  jumlahBaik        Int                   @default(1) @map("jumlah_baik")
+  jumlahRusakRingan Int                   @default(0) @map("jumlah_rusak_ringan")
+  jumlahRusakBerat  Int                   @default(0) @map("jumlah_rusak_berat")
+  jumlahAfkir       Int                   @default(0) @map("jumlah_afkir")
+  kondisiUtama      String                @default("baik") @map("kondisi_utama") // "baik", "rusak_ringan", "rusak_berat", "afkir"
+  pjPegawaiId       Int?                  @map("pj_pegawai_id")
+  fotoUrl           String?               @map("foto_url")
+  keterangan        String?               @db.Text
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  kategori          SarprasKategoriBarang @relation(fields: [kategoriId], references: [id], onDelete: Restrict)
+  ruangan           SarprasRuangan?       @relation(fields: [ruanganId], references: [id], onDelete: SetNull)
+  pjPegawai         Pegawai?              @relation("BarangPIC", fields: [pjPegawaiId], references: [id], onDelete: SetNull)
+
+  @@index([kategoriId])
+  @@index([ruanganId])
+  @@index([kondisiUtama])
+  @@index([kodeBarang])
+  @@map("sarpras_barang")
+}
+
+// ==========================================
+// 15. KALENDER AKADEMIK & AGENDA SEKOLAH
+// ==========================================
+
+model AkademikKalender {
+  id             Int      @id @default(autoincrement())
+  judul          String
+  deskripsi      String?  @db.Text
+  tanggalMulai   DateTime @map("tanggal_mulai") @db.Date
+  tanggalSelesai DateTime @map("tanggal_selesai") @db.Date
+  kategori       String   @default("akademik") // "akademik", "ujian", "libur", "kegiatan", "rapat", "ekstrakurikuler", "upacara", "lainnya"
+  warna          String   @default("#3b82f6") // hex color code untuk visual kalender
+  tahunAjaran    String   @default("2024/2025") @map("tahun_ajaran")
+  semester       String   @default("ganjil") // "ganjil", "genap", "keduanya"
+  sasaran        String   @default("semua") // "semua", "guru", "siswa", "wali_murid"
+  liburSekolah   Boolean  @default(false) @map("libur_sekolah")
+  isPublic       Boolean  @default(true) @map("is_public")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([kategori])
+  @@index([tanggalMulai])
+  @@index([tanggalSelesai])
+  @@index([tahunAjaran])
+  @@map("akademik_kalender")
+}
+
+// ==========================================
+// 16. AUDIT TRAIL & LOG PENGAWASAN KEAMANAN
+// ==========================================
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int?     @map("user_id")
+  username    String?
+  namaUser    String?  @map("nama_user")
+  role        String?
+  modul       String   // "AUTH", "AKADEMIK", "KEUANGAN", "KESISWAAN", "PERPUSTAKAAN", "SARPRAS", "CMS", "PENGATURAN"
+  aksi        String   // "LOGIN", "LOGOUT", "CREATE", "UPDATE", "DELETE", "EXPORT", "PRINT", "VOID", "STATUS_CHANGE"
+  deskripsi   String   @db.Text
+  dataSebelum String?  @db.Text @map("data_sebelum")
+  dataSesudah String?  @db.Text @map("data_sesudah")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  status      String   @default("SUCCESS") // "SUCCESS", "FAILED", "WARNING"
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([modul])
+  @@index([aksi])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("sec_audit_log")
+}
+
+
+
 

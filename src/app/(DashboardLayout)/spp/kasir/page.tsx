@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Wallet,
   CalendarCheck,
@@ -14,12 +15,22 @@ import {
   User,
   ArrowRight,
   ShieldCheck,
+  ScanLine,
+  QrCode,
+  X,
+  Sparkles,
 } from 'lucide-react'
 import { formatRupiah, terbilang } from '@/lib/terbilang'
 import KuitansiModal from '@/components/spp/KuitansiModal'
+import QrScannerModal from '@/components/spp/QrScannerModal'
 import SearchableSelect from '@/components/ui/searchable-select'
+import { usePermission } from '@/context/PermissionContext'
 
-export default function KasirSppPage() {
+function KasirSppContent() {
+  const { canCreate } = usePermission()
+  const allowCreate = canCreate('/spp/kasir')
+  const searchParams = useSearchParams()
+  const preselectedSiswaId = searchParams.get('siswaId')
   // Stats
   const [stats, setStats] = useState<any>({
     totalPenerimaan: 0,
@@ -36,6 +47,7 @@ export default function KasirSppPage() {
 
   // Status 12 Bulan
   const [tahunAjaran, setTahunAjaran] = useState('2024/2025')
+  const [tahunOptions, setTahunOptions] = useState<string[]>(['2024/2025', '2025/2026', '2023/2024'])
   const [loadingGrid, setLoadingGrid] = useState(false)
   const [sppData, setSppData] = useState<any>(null)
 
@@ -52,6 +64,13 @@ export default function KasirSppPage() {
   const [isKuitansiOpen, setIsKuitansiOpen] = useState(false)
   const [kuitansiData, setKuitansiData] = useState<any>(null)
 
+  // QR & Barcode Scanner States
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [scanFeedback, setScanFeedback] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
+
   // Fetch SPP Stats
   const fetchStats = async () => {
     try {
@@ -65,6 +84,19 @@ export default function KasirSppPage() {
 
   useEffect(() => {
     fetchStats()
+    fetch('/api/akademik/tahun-ajaran/aktif')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          if (json.data.activePeriod?.nama) {
+            setTahunAjaran(json.data.activePeriod.nama)
+          }
+          if (json.data.tahunList?.length > 0) {
+            setTahunOptions(json.data.tahunList)
+          }
+        }
+      })
+      .catch(() => {})
   }, [])
 
   // Autocomplete Search Siswa
@@ -114,6 +146,79 @@ export default function KasirSppPage() {
     setSearchResults([])
     loadSiswaGrid(siswa.id, tahunAjaran)
   }
+
+  // Handle QR / Barcode Scan Lookup (Camera & Hardware USB Scanner)
+  const handleScanLookup = async (rawCode: string) => {
+    let cleanCode = rawCode.trim()
+    if (cleanCode.toUpperCase().startsWith('SISWA:')) {
+      cleanCode = cleanCode.substring(6).trim()
+    }
+    if (!cleanCode) return
+
+    setScanFeedback(null)
+    try {
+      // 1. Cari berdasarkan NIS yang tepat (exact NIS)
+      const res = await fetch(`/api/siswa?nis=${encodeURIComponent(cleanCode)}`)
+      const json = await res.json()
+      if (json.success && json.data && json.data.length > 0) {
+        const found = json.data[0]
+        handleSelectSiswa(found)
+        setScanFeedback({
+          type: 'success',
+          message: `Kartu siswa terdeteksi: ${found.nama} (NIS: ${found.nis})`,
+        })
+        return
+      }
+
+      // 2. Fallback pencarian search string
+      const res2 = await fetch(`/api/siswa?search=${encodeURIComponent(cleanCode)}&limit=1`)
+      const json2 = await res2.json()
+      if (json2.success && json2.data && json2.data.length > 0) {
+        const found = json2.data[0]
+        handleSelectSiswa(found)
+        setScanFeedback({
+          type: 'success',
+          message: `Kartu siswa terdeteksi: ${found.nama} (NIS: ${found.nis})`,
+        })
+        return
+      }
+
+      setScanFeedback({
+        type: 'error',
+        message: `Siswa dengan NIS / Kode "${cleanCode}" tidak ditemukan dalam database.`,
+      })
+    } catch (err) {
+      console.error('Scan lookup error:', err)
+      setScanFeedback({
+        type: 'error',
+        message: 'Gagal memproses kode pemindaian kartu.',
+      })
+    }
+  }
+
+  // Handle Enter Key di Input Pencarian (Scanner USB Hardware mengirim Enter)
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (searchQuery.trim()) {
+        handleScanLookup(searchQuery)
+      }
+    }
+  }
+
+  // Auto-select siswa jika dipassing lewat URL (?siswaId=...)
+  useEffect(() => {
+    if (preselectedSiswaId) {
+      fetch(`/api/siswa/${preselectedSiswaId}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success && json.data) {
+            handleSelectSiswa(json.data)
+          }
+        })
+        .catch(console.error)
+    }
+  }, [preselectedSiswaId])
 
   // Toggle Checkbox Bulan
   const handleToggleMonth = (monthItem: any) => {
@@ -276,18 +381,32 @@ export default function KasirSppPage() {
       {/* Bagian Pencarian & Panel Siswa */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="relative">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-            Cari Peserta Didik (Ketik Nama / NIS / NISN)
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            Cari Peserta Didik (Ketik Nama / NIS atau Scan Kartu Siswa)
           </label>
-          <div className="relative">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Ketik minimal 2 karakter (misal: Ahmad, 2024001)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Ketik nama / NIS (misal: 1234524) lalu tekan Enter..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </div>
+
+            {/* Tombol Kamera Scan QR */}
+            <button
+              type="button"
+              onClick={() => setIsScannerOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:from-blue-700 hover:to-indigo-700 active:scale-95 transition flex-shrink-0"
+              title="Buka Kamera Pemindai QR Kartu Siswa"
+            >
+              <ScanLine className="h-4 w-4" />
+              <span>Scan QR Kartu</span>
+            </button>
           </div>
 
           {/* Autocomplete Dropdown List */}
@@ -313,6 +432,41 @@ export default function KasirSppPage() {
                   </span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Petunjuk & Status Hardware Scanner */}
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Siap memindai otomatis via <strong>Scanner Barcode/QR USB</strong> & kamera laptop/HP
+            </span>
+            {isSearching && <span className="text-blue-500 font-medium">Mencari...</span>}
+          </div>
+
+          {/* Scan Feedback Banner */}
+          {scanFeedback && (
+            <div
+              className={`mt-3 flex items-center justify-between rounded-xl px-4 py-2.5 text-xs font-semibold ${
+                scanFeedback.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900/50'
+                  : 'bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-900/50'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {scanFeedback.type === 'success' ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0" />
+                )}
+                <span>{scanFeedback.message}</span>
+              </div>
+              <button
+                onClick={() => setScanFeedback(null)}
+                className="text-slate-400 hover:text-slate-600 ml-2"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
             </div>
           )}
         </div>
@@ -362,11 +516,10 @@ export default function KasirSppPage() {
                   setTahunAjaran(val)
                   loadSiswaGrid(selectedSiswa.id, val)
                 }}
-                options={[
-                  { value: '2024/2025', label: '2024/2025' },
-                  { value: '2025/2026', label: '2025/2026' },
-                  { value: '2023/2024', label: '2023/2024' },
-                ]}
+                options={tahunOptions.map((t) => ({
+                  value: t,
+                  label: t,
+                }))}
                 placeholder="Pilih Tahun Ajaran"
                 searchPlaceholder="Cari..."
               />
@@ -602,14 +755,20 @@ export default function KasirSppPage() {
                   </div>
 
                   {/* Tombol Eksekusi Bayar */}
-                  <button
-                    onClick={handleProcessPayment}
-                    disabled={isSubmitting}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-700 focus:outline-none disabled:opacity-50 transition-all"
-                  >
-                    <ShieldCheck className="h-5 w-5" />
-                    {isSubmitting ? 'Memproses Transaksi...' : `Bayar & Terbitkan Kuitansi (${formatRupiah(totalBayar)})`}
-                  </button>
+                  {allowCreate ? (
+                    <button
+                      onClick={handleProcessPayment}
+                      disabled={isSubmitting}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-700 focus:outline-none disabled:opacity-50 transition-all"
+                    >
+                      <ShieldCheck className="h-5 w-5" />
+                      {isSubmitting ? 'Memproses Transaksi...' : `Bayar & Terbitkan Kuitansi (${formatRupiah(totalBayar)})`}
+                    </button>
+                  ) : (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center text-xs font-semibold text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+                      Mode Lihat Saja: Akun Anda tidak memiliki hak akses [CREATE] untuk memproses pembayaran kasir SPP.
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -633,6 +792,27 @@ export default function KasirSppPage() {
         onClose={() => setIsKuitansiOpen(false)}
         data={kuitansiData}
       />
+
+      {/* Modal Scanner QR Kamera */}
+      <QrScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={handleScanLookup}
+      />
     </div>
+  )
+}
+
+export default function KasirSppPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center text-sm text-slate-500">
+          Memuat kasir SPP...
+        </div>
+      }
+    >
+      <KasirSppContent />
+    </Suspense>
   )
 }

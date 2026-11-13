@@ -8,6 +8,7 @@ import {
   ArrowRight,
   ExternalLink,
   Sparkles,
+  GraduationCap,
 } from 'lucide-react'
 
 interface SlideItem {
@@ -42,34 +43,57 @@ export default function HeroSlider({ slides }: { slides: SlideItem[] }) {
     setCurrent((prev) => (prev - 1 + slides.length) % slides.length)
   }
 
+  // Fallback jika belum ada slide dari CMS
   if (!slides || slides.length === 0) {
     return (
-      <div className="relative overflow-hidden bg-slate-950 py-24 px-4 text-white sm:py-32">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1E3A8A]/80 to-[#2563EB]/60" />
-        <div className="relative max-w-5xl mx-auto text-center space-y-6">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/20 px-3.5 py-1 text-xs font-semibold text-blue-300 border border-blue-400/30">
-            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-            <span>Pendidikan Unggul Berkelanjutan</span>
-          </span>
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-            Membangun Generasi Cerdas, Berkarakter & Berdaya Saing
-          </h1>
-          <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-300">
-            Lembaga pendidikan formal terpadu yang memadukan keunggulan akademik, riset teknologi, dan budi pekerti luhur.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-            <Link
-              href="/portal/profil"
-              className="rounded-xl bg-[#F59E0B] px-6 py-3 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/30 hover:bg-amber-600 transition"
-            >
-              Pelajari Selengkapnya
-            </Link>
-            <Link
-              href="#kontak"
-              className="rounded-xl bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur-md hover:bg-white/20 transition"
-            >
-              Hubungi Kami
-            </Link>
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E3A8A] to-[#172554] text-white">
+        {/* Dekorasi Cahaya Latar */}
+        <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-[#3B82F6]/15 blur-3xl pointer-events-none" />
+        <div className="absolute -right-20 -bottom-20 h-96 w-96 rounded-full bg-[#F59E0B]/10 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Kolom Kiri: Teks */}
+            <div className="lg:col-span-7 space-y-4">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F59E0B]/15 border border-[#F59E0B]/40 text-[#FCD34D] text-xs sm:text-sm font-medium mb-2 backdrop-blur-sm">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>Pendidikan Unggul Berkelanjutan</span>
+              </span>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
+                Membangun Generasi Cerdas, Berkarakter & Berdaya Saing
+              </h1>
+              <p className="text-blue-100/90 text-base sm:text-lg leading-relaxed max-w-xl">
+                Lembaga pendidikan formal terpadu yang memadukan keunggulan akademik, riset teknologi, dan budi pekerti luhur.
+              </p>
+              <div className="flex flex-wrap items-center gap-3 pt-4">
+                <Link
+                  href="/portal/profil"
+                  className="bg-[#F59E0B] hover:bg-[#D97706] text-slate-950 font-semibold px-6 py-3 rounded-xl shadow-lg shadow-amber-500/20 transition-all inline-flex items-center gap-2 active:scale-95"
+                >
+                  <span>Pelajari Selengkapnya</span>
+                  <ArrowRight className="w-4 h-4 text-slate-950" />
+                </Link>
+                <Link
+                  href="#kontak"
+                  className="bg-white/10 hover:bg-white/20 text-white border border-white/25 backdrop-blur-sm px-6 py-3 rounded-xl transition-all inline-flex items-center gap-2 active:scale-95"
+                >
+                  <span>Hubungi Kami</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Kolom Kanan: Frame Ilustrasi */}
+            <div className="lg:col-span-5">
+              <div className="relative rounded-2xl overflow-hidden border-2 border-white/15 bg-slate-900/40 shadow-2xl aspect-[16/10] sm:aspect-[16/9] lg:aspect-[4/3] flex items-center justify-center border-t-2 border-t-[#F59E0B]">
+                <div className="text-center p-8">
+                  <div className="h-16 w-16 mx-auto rounded-2xl bg-white/10 flex items-center justify-center text-amber-400 mb-3 backdrop-blur-md">
+                    <GraduationCap className="h-9 w-9" />
+                  </div>
+                  <p className="text-sm font-bold text-white">Sistem Informasi Sekolah Terpadu</p>
+                  <p className="text-xs text-blue-200/80 mt-1">Portal Resmi Akademik & Kesiswaan</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -79,105 +103,135 @@ export default function HeroSlider({ slides }: { slides: SlideItem[] }) {
   const activeSlide = slides[current]
 
   return (
-    <div className="relative h-[520px] sm:h-[580px] lg:h-[620px] w-full overflow-hidden bg-slate-950">
-      {/* Background Image & Overlay */}
-      {slides.map((s, idx) => (
-        <div
-          key={s.id}
-          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-            idx === current ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-          }`}
-        >
-          {s.fotoUrl ? (
-            <img
-              src={s.fotoUrl}
-              alt={s.judul}
-              className="h-full w-full object-cover scale-105 transform animate-pulse duration-[10000ms]"
-            />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-tr from-slate-950 via-slate-900 to-blue-950" />
-          )}
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E3A8A] to-[#172554] text-white">
+      {/* Dekorasi Cahaya Latar Samar (Academic Trust Glow Effect) */}
+      <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-[#3B82F6]/15 blur-3xl pointer-events-none" />
+      <div className="absolute -right-20 -bottom-20 h-96 w-96 rounded-full bg-[#F59E0B]/10 blur-3xl pointer-events-none" />
 
-          {/* Deep Dark & Color Vignette Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-        </div>
-      ))}
+      {/* Konten Hero 2 Kolom (Split Hero Layout) */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20 pb-16 lg:pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          
+          {/* ============================================================== */}
+          {/* KOLOM KIRI: KONTEN TEKS & CTA SLIDE AKTIF                      */}
+          {/* ============================================================== */}
+          <div className="lg:col-span-7 flex flex-col justify-center">
+            <div key={`text-${activeSlide.id}`} className="space-y-4 animate-fade-in">
+              {/* Badge Kategori Slide */}
+              {activeSlide.badge && (
+                <div>
+                  <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F59E0B]/15 border border-[#F59E0B]/40 text-[#FCD34D] text-xs sm:text-sm font-medium mb-1 backdrop-blur-sm">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>{activeSlide.badge}</span>
+                  </span>
+                </div>
+              )}
 
-      {/* Slide Content */}
-      <div className="relative z-20 max-w-7xl mx-auto h-full px-4 sm:px-8 flex flex-col justify-center">
-        <div className="max-w-2xl space-y-5 animate-fade-in">
-          {activeSlide.badge && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/20 px-3.5 py-1 text-xs font-bold tracking-wide text-blue-300 border border-blue-400/30 backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-              <span>{activeSlide.badge}</span>
-            </span>
-          )}
+              {/* Judul Utama Slide */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight drop-shadow-sm">
+                {activeSlide.judul}
+              </h1>
 
-          <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight tracking-tight drop-shadow-lg">
-            {activeSlide.judul}
-          </h2>
+              {/* Deskripsi Slide */}
+              <p className="text-blue-100/90 text-base sm:text-lg leading-relaxed max-w-xl">
+                {activeSlide.deskripsi}
+              </p>
 
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed drop-shadow line-clamp-3">
-            {activeSlide.deskripsi}
-          </p>
-
-          <div className="flex flex-wrap items-center gap-3 pt-3">
-            {activeSlide.link1Text && (
-              <a
-                href={activeSlide.link1Url || '#'}
-                className="flex items-center gap-2 rounded-xl bg-[#F59E0B] px-6 py-3 text-xs sm:text-sm font-bold text-slate-900 shadow-xl shadow-amber-500/30 hover:bg-amber-600 transition active:scale-95"
-              >
-                <span>{activeSlide.link1Text}</span>
-                <ArrowRight className="w-4 h-4 text-slate-900" />
-              </a>
-            )}
-            {activeSlide.link2Text && (
-              <a
-                href={activeSlide.link2Url || '#'}
-                className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-xs sm:text-sm font-semibold text-white backdrop-blur-md hover:bg-white/20 transition active:scale-95"
-              >
-                <span>{activeSlide.link2Text}</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
+              {/* Tombol CTA Slide */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                {activeSlide.link1Text && (
+                  <a
+                    href={activeSlide.link1Url || '#'}
+                    className="bg-[#F59E0B] hover:bg-[#D97706] text-slate-950 font-semibold px-6 py-3 rounded-xl shadow-lg shadow-amber-500/20 transition-all inline-flex items-center gap-2 active:scale-95 text-xs sm:text-sm"
+                  >
+                    <span>{activeSlide.link1Text}</span>
+                    <ArrowRight className="w-4 h-4 text-slate-950" />
+                  </a>
+                )}
+                {activeSlide.link2Text && (
+                  <a
+                    href={activeSlide.link2Url || '#'}
+                    className="bg-white/10 hover:bg-white/20 text-white border border-white/25 backdrop-blur-sm px-6 py-3 rounded-xl transition-all inline-flex items-center gap-2 active:scale-95 text-xs sm:text-sm font-semibold"
+                  >
+                    <span>{activeSlide.link2Text}</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
+
+          {/* ============================================================== */}
+          {/* KOLOM KANAN: FRAME GAMBAR CAROUSEL JERNIH TANPA OVERLAY GELAP   */}
+          {/* ============================================================== */}
+          <div className="lg:col-span-5 flex flex-col items-center">
+            <div className="w-full relative rounded-2xl overflow-hidden border-2 border-white/15 bg-slate-900/40 shadow-2xl aspect-[16/10] sm:aspect-[16/9] lg:aspect-[4/3] group border-t-2 border-t-[#F59E0B]">
+              {/* Slides Gambar Carousel Terang 100% */}
+              {slides.map((s, idx) => (
+                <div
+                  key={s.id}
+                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                    idx === current ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                  }`}
+                >
+                  {s.fotoUrl ? (
+                    <img
+                      src={s.fotoUrl}
+                      alt={s.judul}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-tr from-[#1E3A8A] via-[#172554] to-[#2563EB] flex flex-col items-center justify-center text-white/50 p-6">
+                      <GraduationCap className="w-16 h-16 text-amber-400/80 mb-2" />
+                      <span className="text-xs text-blue-200/70 font-medium text-center">
+                        {s.judul}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Tombol Navigasi Panah Kiri & Kanan di Dalam Frame */}
+              {slides.length > 1 && (
+                <>
+                  <button
+                    onClick={prevSlide}
+                    aria-label="Previous Slide"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-[#1E3A8A]/75 hover:bg-[#2563EB] text-white border border-white/25 backdrop-blur-md w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    aria-label="Next Slide"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-[#1E3A8A]/75 hover:bg-[#2563EB] text-white border border-white/25 backdrop-blur-md w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+
+                  {/* Indikator Dot Carousel di Bagian Bawah Frame */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-[#0F172A]/60 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10 shadow-sm">
+                    {slides.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrent(idx)}
+                        aria-label={`Pindah ke slide ${idx + 1}`}
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          idx === current
+                            ? 'w-7 bg-[#F59E0B] shadow-sm shadow-amber-500/50'
+                            : 'w-2 bg-white/35 hover:bg-white/60'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
-
-      {/* Navigasi Panah Kiri & Kanan */}
-      {slides.length > 1 && (
-        <>
-          <button
-            onClick={prevSlide}
-            aria-label="Previous Slide"
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/25 active:scale-90"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          <button
-            onClick={nextSlide}
-            aria-label="Next Slide"
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/25 active:scale-90"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-
-          {/* Dots Indicator */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
-            {slides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrent(idx)}
-                aria-label={`Go to slide ${idx + 1}`}
-                className={`h-2.5 rounded-full transition-all duration-300 ${
-                  idx === current ? 'w-8 bg-[#F59E0B]' : 'w-2.5 bg-white/40 hover:bg-white/60'
-                }`}
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+    </section>
   )
 }
+

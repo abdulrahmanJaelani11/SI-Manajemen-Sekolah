@@ -2,9 +2,13 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth/password'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { requirePermission } from '@/lib/auth/api-guard'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/pengaturan/pengguna', 'view')
+    if (auth.errorResponse) return auth.errorResponse
+
     const users = await prisma.secUser.findMany({
       orderBy: { id: 'asc' },
       select: {
@@ -41,11 +45,18 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/pengaturan/pengguna', 'create')
+    if (auth.errorResponse) return auth.errorResponse
+
     const body = await request.json()
     const { username, password, namaLengkap, email, roleId } = body
 
     if (!username || !password || !namaLengkap || !roleId) {
       return apiError('Username, Password, Nama Lengkap, dan Role wajib diisi', 400)
+    }
+
+    if (String(password).trim().length < 6) {
+      return apiError('Kata sandi harus memiliki panjang minimal 6 karakter', 400)
     }
 
     const cleanUsername = String(username).trim().toLowerCase()

@@ -17,8 +17,8 @@ import {
 
 export default function LoginSiswaPage() {
   const router = useRouter()
-  const [nis, setNis] = useState('1234524')
-  const [credential, setCredential] = useState('11-12-2016')
+  const [nis, setNis] = useState('')
+  const [credential, setCredential] = useState('')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 

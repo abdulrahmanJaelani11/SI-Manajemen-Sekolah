@@ -1,9 +1,13 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/pengaturan/hak-akses', 'view')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { searchParams } = new URL(request.url)
     const roleIdParam = searchParams.get('roleId')
     const roleId = roleIdParam ? parseInt(roleIdParam, 10) : 1
@@ -55,6 +59,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/pengaturan/hak-akses', 'edit')
+    if (auth.errorResponse) return auth.errorResponse
+
     const body = await request.json()
     const { roleId, permissions } = body
 

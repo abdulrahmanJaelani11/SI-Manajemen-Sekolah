@@ -2,12 +2,16 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth/password'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requirePermission(request, '/pengaturan/pengguna', 'edit')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const userId = parseInt(id, 10)
     if (isNaN(userId)) return apiError('ID tidak valid', 400)
@@ -36,6 +40,9 @@ export async function PUT(
 
     // Jika password baru diisi
     if (password && String(password).trim().length > 0) {
+      if (String(password).trim().length < 6) {
+        return apiError('Kata sandi baru minimal 6 karakter', 400)
+      }
       updateData.password = await hashPassword(String(password).trim())
     }
 
@@ -67,6 +74,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requirePermission(request, '/pengaturan/pengguna', 'delete')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const userId = parseInt(id, 10)
     if (isNaN(userId)) return apiError('ID tidak valid', 400)

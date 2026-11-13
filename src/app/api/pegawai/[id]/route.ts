@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { requirePermission } from '@/lib/auth/api-guard'
 import storage from '@/lib/storage'
 
 export async function GET(
@@ -33,6 +34,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requirePermission(request, '/pegawai', 'edit')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const pegawaiId = parseInt(id, 10)
     if (isNaN(pegawaiId)) return apiError('ID pegawai tidak valid', 400)
@@ -102,6 +106,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requirePermission(request, '/pegawai', 'delete')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const pegawaiId = parseInt(id, 10)
     if (isNaN(pegawaiId)) return apiError('ID pegawai tidak valid', 400)

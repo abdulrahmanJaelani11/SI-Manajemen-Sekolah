@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { requireAuth, requirePermission } from '@/lib/auth/api-guard'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -8,6 +9,9 @@ interface Params {
 
 export async function GET(request: NextRequest, { params }: Params) {
   try {
+    const auth = await requireAuth(request)
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const roleId = parseInt(id, 10)
 
@@ -43,6 +47,9 @@ export async function GET(request: NextRequest, { params }: Params) {
 
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
+    const auth = await requirePermission(request, '/pengaturan/role', 'edit')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const roleId = parseInt(id, 10)
 
@@ -118,6 +125,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
+    const auth = await requirePermission(request, '/pengaturan/role', 'delete')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const roleId = parseInt(id, 10)
 

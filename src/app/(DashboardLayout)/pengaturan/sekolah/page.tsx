@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { usePermission } from '@/context/PermissionContext'
 import {
   Building2,
   Palette,
@@ -68,6 +69,9 @@ const THEME_PRESETS = [
 ]
 
 export default function PengaturanSekolahPage() {
+  const { canEdit } = usePermission()
+  const allowEdit = canEdit('/pengaturan/sekolah')
+
   const [activeTab, setActiveTab] = useState<'identitas' | 'visi_misi' | 'tema'>('identitas')
 
   const [formData, setFormData] = useState({
@@ -190,6 +194,15 @@ export default function PengaturanSekolahPage() {
               },
             })
           )
+          window.dispatchEvent(
+            new CustomEvent('school-profile-updated', {
+              detail: {
+                namaSekolah: formData.namaSekolah,
+                npsn: formData.npsn,
+                logoUrl: formData.logoUrl,
+              },
+            })
+          )
         }
       } else {
         setStatusMessage({ type: 'error', text: resJson.message || 'Gagal menyimpan profil sekolah' })
@@ -213,15 +226,26 @@ export default function PengaturanSekolahPage() {
             Konfigurasi identitas resmi sekolah, visi-misi, serta Dynamic Theming Engine untuk mengubah skema warna sistem.
           </p>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-bold text-white shadow hover:bg-blue-700 disabled:opacity-50 transition-all"
-        >
-          <Save className="h-4 w-4" />
-          {saving ? 'Menyimpan...' : 'Simpan Semua Perubahan'}
-        </button>
+        {allowEdit && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-bold text-white shadow hover:bg-blue-700 disabled:opacity-50 transition-all"
+          >
+            <Save className="h-4 w-4" />
+            {saving ? 'Menyimpan...' : 'Simpan Semua Perubahan'}
+          </button>
+        )}
       </div>
+
+      {!allowEdit && (
+        <div className="flex items-center gap-2 rounded-xl bg-amber-50 p-4 text-xs font-medium text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/40">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>
+            Mode Lihat Saja: Akun Anda tidak memiliki hak akses [EDIT] untuk mengubah profil sekolah atau tema tampilan sistem.
+          </span>
+        </div>
+      )}
 
       {/* Status Alert */}
       {statusMessage && (

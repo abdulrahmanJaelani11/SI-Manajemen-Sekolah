@@ -14,8 +14,12 @@ import {
 import { formatRupiah, BULAN_AKADEMIK } from '@/lib/terbilang'
 import KuitansiModal from '@/components/spp/KuitansiModal'
 import SearchableSelect from '@/components/ui/searchable-select'
+import { usePermission } from '@/context/PermissionContext'
 
 export default function RiwayatSppPage() {
+  const { canDelete } = usePermission()
+  const allowDelete = canDelete('/spp/riwayat')
+
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [meta, setMeta] = useState<any>({ page: 1, limit: 25, total: 0, totalPages: 1 })
@@ -295,7 +299,7 @@ export default function RiwayatSppPage() {
                         >
                           <Printer className="h-4 w-4" />
                         </button>
-                        {item.status === 'lunas' && (
+                        {allowDelete && item.status === 'lunas' && (
                           <button
                             onClick={() => handleVoidTransaksi(item)}
                             title="Batalkan Transaksi (VOID)"

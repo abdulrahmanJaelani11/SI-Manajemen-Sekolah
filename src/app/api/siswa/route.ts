@@ -1,11 +1,19 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/siswa', 'view')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { searchParams } = new URL(request.url)
-    const search = searchParams.get('search')?.trim() || ''
+    let search = searchParams.get('search')?.trim() || ''
+    if (search.toUpperCase().startsWith('SISWA:')) {
+      search = search.substring(6).trim()
+    }
+    const nis = searchParams.get('nis')?.trim()
     const jenjangId = searchParams.get('jenjangId')
     const kelasId = searchParams.get('kelasId')
     const jurusanId = searchParams.get('jurusanId')
@@ -18,6 +26,10 @@ export async function GET(request: NextRequest) {
 
     const where: any = {}
 
+    if (nis) {
+      const cleanNis = nis.toUpperCase().startsWith('SISWA:') ? nis.substring(6).trim() : nis
+      where.nis = cleanNis
+    }
     if (jenjangId) where.jenjangId = parseInt(jenjangId, 10)
     if (kelasId) where.kelasId = parseInt(kelasId, 10)
     if (jurusanId) where.jurusanId = parseInt(jurusanId, 10)
@@ -70,6 +82,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/siswa', 'create')
+    if (auth.errorResponse) return auth.errorResponse
+
     const body = await request.json()
     const {
       jenjangId,

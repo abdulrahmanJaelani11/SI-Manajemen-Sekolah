@@ -169,6 +169,12 @@ export default async function PortalLayout({
             >
               Kegiatan
             </Link>
+            <Link
+              href="/portal/ppdb"
+              className="px-3.5 py-2 rounded-xl bg-amber-50 text-amber-700 font-bold hover:bg-amber-100 border border-amber-200/80 transition"
+            >
+              PPDB Online
+            </Link>
           </nav>
 
           {/* CTA Masuk Sistem */}
@@ -263,9 +269,15 @@ export default async function PortalLayout({
                   </Link>
                 </li>
                 <li className="pt-1 border-t border-blue-800/50">
+                  <Link href="/portal/ppdb" className="text-emerald-300 font-bold hover:text-emerald-200 flex items-center gap-1.5 transition">
+                    <ChevronRight className="w-3 h-3 text-emerald-300" />
+                    <span>PPDB Online (Daftar &amp; Cek Status)</span>
+                  </Link>
+                </li>
+                <li>
                   <Link href="/portal/login-siswa" className="text-amber-400 font-bold hover:text-amber-300 flex items-center gap-1.5 transition">
                     <ChevronRight className="w-3 h-3 text-amber-400" />
-                    <span>Portal Siswa & Wali (Cek SPP)</span>
+                    <span>Portal Siswa &amp; Wali (Cek SPP)</span>
                   </Link>
                 </li>
               </ul>

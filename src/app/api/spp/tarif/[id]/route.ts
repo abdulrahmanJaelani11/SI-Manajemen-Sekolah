@@ -1,12 +1,16 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requirePermission(request, '/spp/tarif', 'edit')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const tarifId = parseInt(id, 10)
     if (isNaN(tarifId)) return apiError('ID tidak valid', 400)
@@ -53,6 +57,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requirePermission(request, '/spp/tarif', 'delete')
+    if (auth.errorResponse) return auth.errorResponse
+
     const { id } = await params
     const tarifId = parseInt(id, 10)
     if (isNaN(tarifId)) return apiError('ID tidak valid', 400)

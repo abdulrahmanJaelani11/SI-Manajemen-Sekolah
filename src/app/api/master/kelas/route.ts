@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,6 +44,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/kelas', 'create')
+    if (auth.errorResponse) return auth.errorResponse
+
     const body = await request.json()
     const {
       jenjangId,

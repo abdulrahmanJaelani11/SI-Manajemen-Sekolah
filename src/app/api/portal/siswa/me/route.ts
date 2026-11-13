@@ -1,9 +1,7 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
-import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'MAARIF_SUPER_SECRET_KEY_2024_2025'
+import { verifyToken, JwtPayloadSiswa } from '@/lib/auth/jwt'
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,18 +17,17 @@ export async function GET(request: NextRequest) {
     }
 
     if (!token) {
-      return apiError('Sesi siswa belum masuk atau telah berakhir', 401)
+      const res = apiError('Sesi siswa belum masuk atau telah berakhir', 401)
+      res.cookies.set('siswa_token', '', { path: '/', maxAge: 0 })
+      return res
     }
 
-    let decoded: any
-    try {
-      decoded = jwt.verify(token, JWT_SECRET)
-    } catch {
-      return apiError('Token sesi tidak valid atau kadaluwarsa', 401)
-    }
+    const decoded = verifyToken<JwtPayloadSiswa>(token)
 
     if (!decoded || decoded.role !== 'siswa' || !decoded.siswaId) {
-      return apiError('Sesi bukan sebagai peserta didik', 403)
+      const res = apiError('Sesi tidak valid atau bukan sebagai peserta didik', 403)
+      res.cookies.set('siswa_token', '', { path: '/', maxAge: 0 })
+      return res
     }
 
     const siswa = await prisma.siswa.findUnique({
@@ -47,7 +44,9 @@ export async function GET(request: NextRequest) {
     })
 
     if (!siswa) {
-      return apiError('Data siswa tidak ditemukan', 404)
+      const res = apiError('Data siswa tidak ditemukan', 404)
+      res.cookies.set('siswa_token', '', { path: '/', maxAge: 0 })
+      return res
     }
 
     return apiSuccess({

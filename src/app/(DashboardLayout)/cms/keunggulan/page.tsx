@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { usePermission } from '@/context/PermissionContext'
 import {
   Award,
   BookOpen,
@@ -45,6 +46,11 @@ const AVAILABLE_ICONS = [
 ]
 
 export default function CmsKeunggulanPage() {
+  const { canCreate, canEdit, canDelete } = usePermission()
+  const allowCreate = canCreate('/cms/keunggulan')
+  const allowEdit = canEdit('/cms/keunggulan')
+  const allowDelete = canDelete('/cms/keunggulan')
+
   const [items, setItems] = useState<KeunggulanItem[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -200,13 +206,15 @@ export default function CmsKeunggulanPage() {
             <Eye className="h-4 w-4" />
             <span>Lihat di Portal</span>
           </a>
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Tambah Keunggulan</span>
-          </button>
+          {allowCreate && (
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Tambah Keunggulan</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -227,13 +235,15 @@ export default function CmsKeunggulanPage() {
           <p className="mt-1 text-sm text-slate-500">
             Tambahkan pilar keunggulan untuk memikat calon santri/siswa baru di landing page.
           </p>
-          <button
-            onClick={handleOpenAdd}
-            className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Tambah Sekarang</span>
-          </button>
+          {allowCreate && (
+            <button
+              onClick={handleOpenAdd}
+              className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Tambah Sekarang</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -266,43 +276,69 @@ export default function CmsKeunggulanPage() {
 
               {/* Toolbar Aksi Bawah */}
               <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => handleToggleActive(item)}
-                  className={`flex items-center gap-1 text-xs font-semibold ${
-                    item.active
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-slate-400 dark:text-slate-500'
-                  }`}
-                >
-                  {item.active ? (
-                    <>
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>Aktif</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="h-3.5 w-3.5" />
-                      <span>Nonaktif</span>
-                    </>
-                  )}
-                </button>
+                {allowEdit ? (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleActive(item)}
+                    className={`flex items-center gap-1 text-xs font-semibold ${
+                      item.active
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-400 dark:text-slate-500'
+                    }`}
+                  >
+                    {item.active ? (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span>Aktif</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-3.5 w-3.5" />
+                        <span>Nonaktif</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <span
+                    className={`flex items-center gap-1 text-xs font-semibold ${
+                      item.active
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-400 dark:text-slate-500'
+                    }`}
+                  >
+                    {item.active ? (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span>Aktif</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-3.5 w-3.5" />
+                        <span>Nonaktif</span>
+                      </>
+                    )}
+                  </span>
+                )}
 
                 <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => handleOpenEdit(item)}
-                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                    title="Edit Keunggulan"
-                  >
-                    <Edit3 className="h-4 w-4 text-blue-500" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="rounded-lg p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/40 dark:hover:text-red-400"
-                    title="Hapus Keunggulan"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {allowEdit && (
+                    <button
+                      onClick={() => handleOpenEdit(item)}
+                      className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                      title="Edit Keunggulan"
+                    >
+                      <Edit3 className="h-4 w-4 text-blue-500" />
+                    </button>
+                  )}
+                  {allowDelete && (
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="rounded-lg p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                      title="Hapus Keunggulan"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

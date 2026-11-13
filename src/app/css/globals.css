@@ -334,3 +334,43 @@ input[type="time"] {
   will-change: transform;
   -webkit-transform: translate3d(0, 0, 0);
 }
+
+@keyframes scanline {
+  0% {
+    top: 6%;
+    opacity: 0.7;
+  }
+  50% {
+    top: 90%;
+    opacity: 1;
+  }
+  100% {
+    top: 6%;
+    opacity: 0.7;
+  }
+}
+
+.animate-scanline {
+  animation: scanline 2s ease-in-out infinite;
+}
+
+/* ============================================================== */
+/* PRINT MEDIA STYLES */
+/* ============================================================== */
+@media print {
+  .no-print,
+  .print-hidden,
+  aside,
+  header,
+  nav,
+  .sidebar,
+  [data-testid="flowbite-drawer"],
+  .fixed {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}

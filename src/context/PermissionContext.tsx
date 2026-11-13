@@ -83,35 +83,18 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
           localStorage.setItem('user', JSON.stringify(json.data))
         }
       } else {
-        // Cek localStorage sebagai fallback
-        const local = localStorage.getItem('user')
-        if (local) {
-          try {
-            setUser(JSON.parse(local))
-          } catch {
-            setUser(null)
-          }
-        } else {
-          // Default fallback untuk Administrator di lokal development jika belum login
-          setUser({
-            userId: 1,
-            username: 'admin',
-            namaLengkap: 'Administrator Utama',
-            roleId: 1,
-            roleName: 'Administrator',
-            permissions: [],
-          })
+        // Hapus sesi pengguna jika server menolak / unauthenticated
+        setUser(null)
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('user')
+          localStorage.removeItem('token')
         }
       }
     } catch {
-      // Fallback offline/local
-      const local = localStorage.getItem('user')
-      if (local) {
-        try {
-          setUser(JSON.parse(local))
-        } catch {
-          setUser(null)
-        }
+      setUser(null)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user')
+        localStorage.removeItem('token')
       }
     } finally {
       setLoading(false)
@@ -122,13 +105,14 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
     refreshUser()
   }, [])
 
-  const isAdmin = !user || user.roleName === 'Administrator' || user.roleId === 1
+  const isAdmin = !!user && (user.roleName?.toLowerCase() === 'administrator' || user.roleId === 1)
 
   // Evaluasi Hak Akses View
   const canView = (path?: string): boolean => {
     if (!path) return true
+    if (!user) return false // Pengguna belum terautentikasi tidak diizinkan
     if (isAdmin) return true
-    if (!user || !user.permissions || user.permissions.length === 0) return true
+    if (!user.permissions || user.permissions.length === 0) return false
 
     // Bersihkan path
     const cleanPath = path.split('?')[0]
@@ -152,8 +136,9 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
 
   const canCreate = (path?: string): boolean => {
     if (!path) return true
+    if (!user) return false
     if (isAdmin) return true
-    if (!user?.permissions) return true
+    if (!user?.permissions) return false
 
     const cleanPath = path.split('?')[0]
     const matched = user.permissions.find(
@@ -164,8 +149,9 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
 
   const canEdit = (path?: string): boolean => {
     if (!path) return true
+    if (!user) return false
     if (isAdmin) return true
-    if (!user?.permissions) return true
+    if (!user?.permissions) return false
 
     const cleanPath = path.split('?')[0]
     const matched = user.permissions.find(
@@ -176,8 +162,9 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
 
   const canDelete = (path?: string): boolean => {
     if (!path) return true
+    if (!user) return false
     if (isAdmin) return true
-    if (!user?.permissions) return true
+    if (!user?.permissions) return false
 
     const cleanPath = path.split('?')[0]
     const matched = user.permissions.find(

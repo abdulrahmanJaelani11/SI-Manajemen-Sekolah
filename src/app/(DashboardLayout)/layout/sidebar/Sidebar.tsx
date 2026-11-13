@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTheme } from 'next-themes'
@@ -9,7 +10,6 @@ import FullLogo from '../shared/logo/FullLogo'
 import { Button } from '@/components/ui/button'
 import { usePermission } from '@/context/PermissionContext'
 import {
-  AMLogo,
   AMMenu,
   AMMenuItem,
   AMSidebar,
@@ -105,6 +105,25 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
   const pathname = usePathname()
   const { theme } = useTheme()
   const { canView, user } = usePermission()
+  const [activePeriodLabel, setActivePeriodLabel] = useState('2024/2025')
+
+  useEffect(() => {
+    const fetchActivePeriod = async () => {
+      try {
+        const res = await fetch('/api/akademik/tahun-ajaran/aktif')
+        const json = await res.json()
+        if (json.success && json.data?.activePeriod) {
+          const ap = json.data.activePeriod
+          setActivePeriodLabel(`${ap.nama} • ${ap.semester}`)
+        }
+      } catch {
+        // ignore fallback
+      }
+    }
+    fetchActivePeriod()
+    window.addEventListener('tahun-ajaran-updated', fetchActivePeriod)
+    return () => window.removeEventListener('tahun-ajaran-updated', fetchActivePeriod)
+  }, [])
 
   // Only allow "light" or "dark" for AMSidebar
   const sidebarMode = theme === 'light' || theme === 'dark' ? theme : undefined
@@ -130,13 +149,11 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
       showTrigger={false}
       mode={sidebarMode}
       className='fixed left-0 top-0 border-r border-blue-800/30 bg-[#1E3A8A] z-10 h-screen'>
-      {/* Logo */}
-      <div className='px-6 flex items-center brand-logo overflow-hidden border-b border-blue-800/40'>
-        <AMLogo component={Link} href='/' img=''>
-          <div className="dark">
-            <FullLogo />
-          </div>
-        </AMLogo>
+      {/* Logo Sekolah */}
+      <div className='px-5 py-4 flex items-center overflow-hidden border-b border-blue-800/40'>
+        <Link href='/' onClick={onClose} className='w-full block hover:opacity-95 transition'>
+          <FullLogo variant='sidebar' />
+        </Link>
       </div>
 
       {/* Sidebar items */}
@@ -171,8 +188,8 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
                 {user?.namaLengkap || 'Pengguna Sistem'}
               </p>
               <div className='mt-3 pt-2.5 border-t border-blue-700/30 flex items-center justify-between text-[11px] text-blue-300/60'>
-                <span>SI-MAARIF v1.0.0</span>
-                <span className='font-mono'>2024/2025</span>
+                <span>SIM Sekolah v1.0</span>
+                <span className='font-mono'>{activePeriodLabel}</span>
               </div>
             </div>
           </div>

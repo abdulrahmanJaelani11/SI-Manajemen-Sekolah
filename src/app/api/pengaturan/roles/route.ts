@@ -1,9 +1,13 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { requireAuth, requirePermission } from '@/lib/auth/api-guard'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAuth(request)
+    if (auth.errorResponse) return auth.errorResponse
+
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('q') || ''
     const status = searchParams.get('status') || 'all'
@@ -57,6 +61,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, '/pengaturan/role', 'create')
+    if (auth.errorResponse) return auth.errorResponse
+
     const body = await request.json()
     const { namaRole, keterangan, active = true, cloneRoleId } = body
 
