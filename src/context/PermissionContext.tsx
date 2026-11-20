@@ -12,6 +12,18 @@ export interface PermissionItem {
   canDelete: boolean
 }
 
+export interface GuruScope {
+  isGuru: boolean
+  pegawaiId: number | null
+  namaPegawai: string | null
+  kelasIds: number[]
+  jenjangIds: number[]
+  kelasNames: string[]
+  jenjangKodes: string[]
+  isWaliKelas: boolean
+  waliKelasNames: string[]
+}
+
 export interface UserSession {
   userId: number
   username: string
@@ -19,6 +31,17 @@ export interface UserSession {
   roleId: number
   roleName: string
   email?: string | null
+  pegawaiId?: number | null
+  jenjangId?: number | null
+  jenjang?: { id: number; kode: string; nama: string } | null
+  pegawai?: {
+    id: number
+    nip: string | null
+    nama: string
+    jenisPegawai: string
+    bidangStudi: string | null
+  } | null
+  guruScope?: GuruScope
   permissions: PermissionItem[]
 }
 
@@ -63,7 +86,9 @@ const PROTECTED_SYSTEM_PATHS = [
   '/cms/fasilitas',
   '/cms/kegiatan',
   '/pengaturan/pengguna',
+  '/pengaturan/role',
   '/pengaturan/hak-akses',
+  '/pengaturan/menu',
   '/pengaturan/sekolah',
 ]
 

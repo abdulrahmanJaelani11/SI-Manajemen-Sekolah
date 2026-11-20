@@ -376,13 +376,13 @@ export default function PortalPpdbPage() {
     <div className="min-h-screen bg-slate-50 pb-20">
       {/* Hero Banner PPDB */}
       <section className="bg-gradient-to-br from-[#1E3A8A] via-[#1D4ED8] to-[#2563EB] text-white py-12 px-4 sm:px-8 print:hidden">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-amber-300 border border-white/20">
               <Sparkles className="h-3.5 w-3.5" />
               <span>Penerimaan Peserta Didik Baru Online</span>
             </span>
-            <h1 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight">
+            <h1 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-sm">
               PPDB Online {profil?.namaSekolah || 'Sekolah Terpadu'}
             </h1>
             <p className="mt-2 text-sm text-blue-100 max-w-2xl">
@@ -419,7 +419,7 @@ export default function PortalPpdbPage() {
         </div>
       </section>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-8 mt-8 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 mt-8 space-y-6">
         {/* TAB 1: FORMULIR PENDAFTARAN */}
         {activeTab === 'daftar' && (
           <>
@@ -472,66 +472,83 @@ export default function PortalPpdbPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Sidebar Info Gelombang Aktif */}
-                <div className="lg:col-span-4 space-y-4">
-                  <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-                    <h2 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-blue-600" />
-                      <span>Gelombang Dibuka</span>
-                    </h2>
-
-                    {selectedWave ? (
-                      <div className="space-y-3 text-xs">
-                        <div className="rounded-2xl bg-blue-50 border border-blue-200/70 p-3.5 space-y-1">
-                          <p className="font-extrabold text-[#1E3A8A]">{selectedWave.nama}</p>
-                          <p className="text-[11px] font-semibold text-blue-700">
-                            Tahun Ajaran {selectedWave.tahunAjaran}
-                          </p>
-                          <p className="text-[11px] text-slate-600 pt-1">
-                            Periode:{' '}
-                            {new Date(selectedWave.tanggalMulai).toLocaleDateString('id-ID')} s.d.{' '}
-                            {new Date(selectedWave.tanggalSelesai).toLocaleDateString('id-ID')}
-                          </p>
+              <div className="space-y-6">
+                {/* 1. Header Card: Gelombang Dibuka (Berada di atas form) */}
+                {selectedWave && (
+                  <div className="w-full rounded-3xl border border-blue-200/80 bg-white p-5 sm:p-7 shadow-xs space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-2xl bg-blue-50 text-[#1E3A8A] flex items-center justify-center border border-blue-100 shadow-xs">
+                          <Calendar className="h-5 w-5 text-blue-600" />
                         </div>
-
-                        <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3.5 py-2.5 border border-slate-100">
-                          <span className="text-slate-500 font-semibold flex items-center gap-1.5">
-                            <Users className="h-3.5 w-3.5 text-slate-400" />
-                            <span>Sisa Kuota</span>
-                          </span>
-                          <span className="font-black text-emerald-700">
-                            {selectedWave.sisaKuota} / {selectedWave.kuotaTotal} Kursi
-                          </span>
-                        </div>
-
-                        {selectedWave.syaratText && (
-                          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3.5 space-y-1.5">
-                            <p className="font-bold text-slate-800 flex items-center gap-1.5">
-                              <FileText className="h-3.5 w-3.5 text-amber-600" />
-                              <span>Persyaratan Berkas</span>
-                            </p>
-                            <p className="whitespace-pre-line text-[11px] text-slate-600 leading-relaxed">
-                              {selectedWave.syaratText}
-                            </p>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-base font-extrabold text-slate-900 leading-tight">
+                              Gelombang Pendaftaran Dibuka
+                            </h2>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              <span>Aktif</span>
+                            </span>
                           </div>
-                        )}
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Pastikan berkas persyaratan telah disiapkan sebelum mengisi formulir pendaftaran di bawah.
+                          </p>
+                        </div>
                       </div>
-                    ) : null}
-                  </div>
-                </div>
 
-                {/* Form Pendaftaran Utama */}
+                      <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200/80 px-4 py-2 self-start sm:self-auto">
+                        <Users className="h-4 w-4 text-slate-500" />
+                        <span className="text-xs font-semibold text-slate-600">Sisa Kuota:</span>
+                        <span className="text-xs font-black text-emerald-700">
+                          {selectedWave.sisaKuota} / {selectedWave.kuotaTotal} Kursi
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                      {/* Kolom Kiri: Detail Periode & Nama Gelombang */}
+                      <div className="lg:col-span-5 rounded-2xl bg-gradient-to-br from-blue-50/80 to-indigo-50/50 border border-blue-200/70 p-4 space-y-2 flex flex-col justify-center">
+                        <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+                          Tahun Ajaran {selectedWave.tahunAjaran}
+                        </span>
+                        <h3 className="font-extrabold text-base text-[#1E3A8A] leading-snug">
+                          {selectedWave.nama}
+                        </h3>
+                        <div className="text-xs text-slate-600 flex items-center gap-2 pt-1 border-t border-blue-200/50">
+                          <Clock className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                          <span>
+                            Periode: <strong>{new Date(selectedWave.tanggalMulai).toLocaleDateString('id-ID')}</strong> s.d.{' '}
+                            <strong>{new Date(selectedWave.tanggalSelesai).toLocaleDateString('id-ID')}</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Kolom Kanan: Persyaratan Berkas */}
+                      <div className="lg:col-span-7 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 space-y-1.5 flex flex-col justify-center">
+                        <p className="font-extrabold text-xs text-slate-800 flex items-center gap-1.5">
+                          <FileText className="h-4 w-4 text-amber-600" />
+                          <span>Persyaratan Berkas Pendaftaran</span>
+                        </p>
+                        <p className="whitespace-pre-line text-xs text-slate-600 leading-relaxed">
+                          {selectedWave.syaratText || 'Siapkan fotokopi Kartu Keluarga, Akta Kelahiran, dan Ijazah / Surat Keterangan Lulus (SKL) / Rapor terakhir.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Form Pendaftaran Utama (Lebar & Leluasa) */}
                 <form
                   onSubmit={handleSubmitPpdb}
-                  className="lg:col-span-8 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-6"
+                  className="w-full rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-xs space-y-8"
                 >
                   <div>
-                    <h2 className="text-lg font-extrabold text-slate-900">
+                    <h2 className="text-xl font-extrabold text-slate-900">
                       Formulir Pendaftaran Calon Peserta Didik
                     </h2>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Kolom bertanda bintang (*) wajib diisi dengan data sesuai dokumen resmi (KK/Akta).
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                      Kolom bertanda bintang (*) wajib diisi dengan data valid sesuai dokumen resmi kependudukan (KK / Akta Kelahiran).
                     </p>
                   </div>
 
@@ -547,7 +564,7 @@ export default function PortalPpdbPage() {
                     <h3 className="text-xs font-black uppercase tracking-wider text-blue-700">
                       1. Pilihan Gelombang, Jenjang &amp; Jalur
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1.5">
                           Gelombang Pendaftaran *
@@ -625,8 +642,8 @@ export default function PortalPpdbPage() {
                     <h3 className="text-xs font-black uppercase tracking-wider text-blue-700">
                       2. Biodata Calon Siswa &amp; Asal Sekolah
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="sm:col-span-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2 lg:col-span-2">
                         <label className="block text-xs font-bold text-slate-700 mb-1">
                           Nama Lengkap Calon Siswa *
                         </label>
@@ -694,7 +711,7 @@ export default function PortalPpdbPage() {
                         />
                       </div>
 
-                      <div>
+                      <div className="sm:col-span-2 lg:col-span-2">
                         <label className="block text-xs font-bold text-slate-700 mb-1">
                           Asal Sekolah Sebelumnya *
                         </label>
@@ -724,7 +741,7 @@ export default function PortalPpdbPage() {
                         />
                       </div>
 
-                      <div className="sm:col-span-2">
+                      <div className="sm:col-span-2 lg:col-span-3">
                         <label className="block text-xs font-bold text-slate-700 mb-1">
                           Alamat Lengkap Domisili *
                         </label>
@@ -745,7 +762,7 @@ export default function PortalPpdbPage() {
                     <h3 className="text-xs font-black uppercase tracking-wider text-blue-700">
                       3. Data Orang Tua / Wali &amp; Kontak
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
                           Nama Orang Tua / Wali *
@@ -808,7 +825,7 @@ export default function PortalPpdbPage() {
                     <h3 className="text-xs font-black uppercase tracking-wider text-blue-700">
                       4. Unggah Berkas Persyaratan (Maks. 3 MB/File)
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <UploadField
                         label="Pas Foto Calon Siswa"
                         hint="Foto berwarna formal (JPG/PNG)"

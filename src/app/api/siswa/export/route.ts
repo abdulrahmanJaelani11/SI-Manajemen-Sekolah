@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,11 +8,23 @@ export async function GET(request: NextRequest) {
     const jenjangId = searchParams.get('jenjangId')
     const kelasId = searchParams.get('kelasId')
     const status = searchParams.get('status')
+    const scope = searchParams.get('scope')
 
     const where: any = {}
     if (jenjangId) where.jenjangId = parseInt(jenjangId, 10)
     if (kelasId) where.kelasId = parseInt(kelasId, 10)
     if (status) where.status = status
+
+    if (scope === 'my_students') {
+      const auth = await requirePermission(request, '/siswa', 'view')
+      if (!auth.errorResponse && auth.user?.guruScope?.isGuru) {
+        if (auth.user.guruScope.kelasIds.length > 0) {
+          where.kelasId = { in: auth.user.guruScope.kelasIds }
+        } else if (auth.user.guruScope.jenjangIds.length > 0) {
+          where.jenjangId = { in: auth.user.guruScope.jenjangIds }
+        }
+      }
+    }
 
     const siswaList = await prisma.siswa.findMany({
       where,

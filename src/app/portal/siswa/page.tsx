@@ -470,7 +470,10 @@ export default function PortalSiswaDashboard() {
     totalTerbayar: 0,
     totalTunggakan: 0,
     bulanLunasCount: 0,
-    bulanNunggakCount: 12,
+    bulanNunggakCount: 0,
+    bulanMendatangCount: 0,
+    totalMendatang: 0,
+    totalSisaSetahun: 0,
   }
 
   const persenLunas = Math.round((summary.bulanLunasCount / 12) * 100)
@@ -609,21 +612,26 @@ export default function PortalSiswaDashboard() {
           </div>
 
           {/* Kartu 2: Estimasi Tunggakan */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm relative overflow-hidden group hover:border-amber-300 transition border-t-4 border-t-[#F59E0B]">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm relative overflow-hidden group hover:border-rose-300 transition border-t-4 border-t-rose-500">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Sisa Tunggakan SPP
+                Tunggakan Jatuh Tempo
               </span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
                 <Clock className="h-5 w-5" />
               </div>
             </div>
             <div className="mt-3">
-              <div className="text-2xl font-black text-slate-900 font-mono">
+              <div className="text-2xl font-black text-rose-600 font-mono">
                 {formatRupiah(summary.totalTunggakan)}
               </div>
-              <p className="mt-1 text-xs text-amber-600 font-semibold flex items-center gap-1">
-                <span>{summary.bulanNunggakCount} Bulan Belum Dibayar</span>
+              <p className="mt-1 text-xs text-rose-600 font-semibold flex items-center justify-between">
+                <span>{summary.bulanNunggakCount} Bulan Jatuh Tempo</span>
+                {summary.bulanMendatangCount > 0 && (
+                  <span className="text-[11px] font-normal text-slate-400">
+                    +{summary.bulanMendatangCount} bln mendatang
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -834,6 +842,7 @@ export default function PortalSiswaDashboard() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
                   {sppData?.bulanStatus?.map((item: any) => {
                     const isLunas = item.status === 'lunas'
+                    const isMendatang = item.status === 'mendatang'
 
                     return (
                       <div
@@ -841,7 +850,9 @@ export default function PortalSiswaDashboard() {
                         className={`rounded-2xl border p-4 flex flex-col justify-between transition-all ${
                           isLunas
                             ? 'bg-emerald-50/50 border-emerald-200 shadow-sm'
-                            : 'bg-white border-slate-200 hover:border-amber-300'
+                            : isMendatang
+                            ? 'bg-slate-50/50 border-slate-200/80 opacity-80'
+                            : 'bg-rose-50/30 border-rose-200 hover:border-rose-300 shadow-sm'
                         }`}
                       >
                         <div>
@@ -852,10 +863,15 @@ export default function PortalSiswaDashboard() {
                                 <CheckCircle2 className="h-3 w-3" />
                                 Lunas
                               </span>
+                            ) : isMendatang ? (
+                              <span className="flex items-center gap-1 text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-md">
+                                <Calendar className="h-3 w-3" />
+                                Mendatang
+                              </span>
                             ) : (
-                              <span className="flex items-center gap-1 text-amber-600 font-bold bg-amber-100/80 px-2 py-0.5 rounded-md">
+                              <span className="flex items-center gap-1 text-rose-600 font-bold bg-rose-100/80 px-2 py-0.5 rounded-md">
                                 <Clock className="h-3 w-3" />
-                                Nunggak
+                                Jatuh Tempo
                               </span>
                             )}
                           </div>
@@ -902,9 +918,13 @@ export default function PortalSiswaDashboard() {
                                 </button>
                               )}
                             </div>
-                          ) : (
+                          ) : isMendatang ? (
                             <div className="text-[10px] text-slate-400 italic">
-                              Belum terbayar
+                              Belum jatuh tempo
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-rose-500 font-medium">
+                              Jatuh tempo (perlu dibayar)
                             </div>
                           )}
                         </div>

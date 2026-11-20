@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import { useInstitution } from '@/context/InstitutionContext'
 
 interface Jenjang {
   id: number
@@ -56,14 +57,24 @@ export default function KelasPage() {
   const allowCreate = canCreate('/kelas')
   const allowEdit = canEdit('/kelas')
   const allowDelete = canDelete('/kelas')
+  const { isSingleJenjang, defaultJenjangId, jenjangUtama } = useInstitution()
 
   const [kelasList, setKelasList] = useState<Kelas[]>([])
   const [masterJenjang, setMasterJenjang] = useState<Jenjang[]>([])
+  const [tahunList, setTahunList] = useState<string[]>([])
+  const [activeTa, setActiveTa] = useState('2024/2025')
   const [loading, setLoading] = useState(true)
 
   // Filters
   const [selectedJenjang, setSelectedJenjang] = useState('')
   const [selectedTingkat, setSelectedTingkat] = useState('')
+
+  // Sinkronisasi otomatis jenjang pada mode Single-Jenjang
+  useEffect(() => {
+    if (isSingleJenjang && defaultJenjangId) {
+      setSelectedJenjang(String(defaultJenjangId))
+    }
+  }, [isSingleJenjang, defaultJenjangId])
 
   // Modals
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -106,9 +117,19 @@ export default function KelasPage() {
 
   const fetchMaster = async () => {
     try {
-      const res = await fetch('/api/master/jenjang')
-      const data = await res.json()
-      if (data.success) setMasterJenjang(data.data)
+      const [resJenjang, resTa] = await Promise.all([
+        fetch('/api/master/jenjang'),
+        fetch('/api/akademik/tahun-ajaran/aktif'),
+      ])
+      const dataJenjang = await resJenjang.json()
+      const dataTa = await resTa.json()
+      if (dataJenjang.success) setMasterJenjang(dataJenjang.data)
+      if (dataTa.success && dataTa.data) {
+        setTahunList(dataTa.data.tahunList || [])
+        if (dataTa.data.activePeriod?.nama) {
+          setActiveTa(dataTa.data.activePeriod.nama)
+        }
+      }
     } catch (err) {
       console.error('Fetch master error:', err)
     }
@@ -141,14 +162,16 @@ export default function KelasPage() {
   // Open Form Add
   const handleOpenAdd = () => {
     setEditingKelas(null)
-    const defaultJenjang = masterJenjang[0]
+    const defaultJenjang = (isSingleJenjang && defaultJenjangId
+      ? masterJenjang.find((j) => j.id === defaultJenjangId)
+      : masterJenjang[0]) || masterJenjang[0]
     setFormData({
       jenjangId: defaultJenjang ? String(defaultJenjang.id) : '',
       tingkatId: defaultJenjang?.tingkat[0] ? String(defaultJenjang.tingkat[0].id) : '',
       jurusanId: '',
       namaKelas: '',
       waliKelas: '',
-      tahunAjaran: '2024/2025',
+      tahunAjaran: activeTa,
       kapasitas: 36,
       active: true,
     })
@@ -165,7 +188,7 @@ export default function KelasPage() {
       jurusanId: kelas.jurusanId ? String(kelas.jurusanId) : '',
       namaKelas: kelas.namaKelas,
       waliKelas: kelas.waliKelas || '',
-      tahunAjaran: kelas.tahunAjaran || '2024/2025',
+      tahunAjaran: kelas.tahunAjaran || activeTa,
       kapasitas: kelas.kapasitas || 36,
       active: kelas.active,
     })
@@ -313,24 +336,26 @@ export default function KelasPage() {
       {/* Filter Toolbar */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="w-full sm:w-64">
-            <SearchableSelect
-              value={selectedJenjang}
-              onChange={(val) => {
-                setSelectedJenjang(val)
-                setSelectedTingkat('')
-              }}
-              options={[
-                { value: '', label: 'Semua Jenjang' },
-                ...masterJenjang.map((j) => ({
-                  value: String(j.id),
-                  label: `${j.kode} - ${j.nama}`,
-                })),
-              ]}
-              placeholder="Semua Jenjang"
-              searchPlaceholder="Cari jenjang..."
-            />
-          </div>
+          {!isSingleJenjang && (
+            <div className="w-full sm:w-64">
+              <SearchableSelect
+                value={selectedJenjang}
+                onChange={(val) => {
+                  setSelectedJenjang(val)
+                  setSelectedTingkat('')
+                }}
+                options={[
+                  { value: '', label: 'Semua Jenjang' },
+                  ...masterJenjang.map((j) => ({
+                    value: String(j.id),
+                    label: `${j.kode} - ${j.nama}`,
+                  })),
+                ]}
+                placeholder="Semua Jenjang"
+                searchPlaceholder="Cari jenjang..."
+              />
+            </div>
+          )}
 
           {selectedJenjang && (
             <div className="w-full sm:w-48">
@@ -364,7 +389,7 @@ export default function KelasPage() {
                   Rombel / Kelas
                 </th>
                 <th scope="col" className="px-4 py-3.5">
-                  Jenjang & Tingkat
+                  {isSingleJenjang ? 'Tingkat Kelas' : 'Jenjang & Tingkat'}
                 </th>
                 <th scope="col" className="px-4 py-3.5">
                   Wali Kelas
@@ -417,10 +442,15 @@ export default function KelasPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium text-slate-800 dark:text-slate-200">
-                          {k.jenjang.kode}
-                        </span>{' '}
-                        • Tingkat {k.tingkat.tingkat}
+                        {!isSingleJenjang && (
+                          <>
+                            <span className="font-medium text-slate-800 dark:text-slate-200">
+                              {k.jenjang.kode}
+                            </span>{' '}
+                            •{' '}
+                          </>
+                        )}
+                        Tingkat {k.tingkat.tingkat}
                       </td>
                       <td className="px-4 py-3 text-slate-800 dark:text-slate-200">
                         {k.waliKelas || <span className="text-slate-400 italic">Belum ditentukan</span>}
@@ -518,28 +548,42 @@ export default function KelasPage() {
 
             <form onSubmit={handleSaveKelas} className="mt-4 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Jenjang Pendidikan *
-                </label>
-                <SearchableSelect
-                  value={formData.jenjangId}
-                  onChange={(val) => {
-                    const found = masterJenjang.find((j) => j.id === parseInt(val, 10))
-                    setFormData({
-                      ...formData,
-                      jenjangId: val,
-                      tingkatId: found?.tingkat[0] ? String(found.tingkat[0].id) : '',
-                      jurusanId: '',
-                    })
-                  }}
-                  options={masterJenjang.map((j) => ({
-                    value: String(j.id),
-                    label: `${j.kode} - ${j.nama}`,
-                  }))}
-                  placeholder="-- Pilih Jenjang --"
-                  searchPlaceholder="Cari jenjang..."
-                  required
-                />
+                {isSingleJenjang ? (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Jenjang Pendidikan
+                    </label>
+                    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                      <GraduationCap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <span>{jenjangUtama ? `${jenjangUtama.kode} (${jenjangUtama.nama})` : 'Terkunci'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Jenjang Pendidikan *
+                    </label>
+                    <SearchableSelect
+                      value={formData.jenjangId}
+                      onChange={(val) => {
+                        const found = masterJenjang.find((j) => j.id === parseInt(val, 10))
+                        setFormData({
+                          ...formData,
+                          jenjangId: val,
+                          tingkatId: found?.tingkat[0] ? String(found.tingkat[0].id) : '',
+                          jurusanId: '',
+                        })
+                      }}
+                      options={masterJenjang.map((j) => ({
+                        value: String(j.id),
+                        label: `${j.kode} - ${j.nama}`,
+                      }))}
+                      placeholder="-- Pilih Jenjang --"
+                      searchPlaceholder="Cari jenjang..."
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -610,27 +654,28 @@ export default function KelasPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Tahun Ajaran
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Tahun Ajaran *
                   </label>
-                  <input
-                    type="text"
+                  <SearchableSelect
                     value={formData.tahunAjaran}
-                    onChange={(e) => setFormData({ ...formData, tahunAjaran: e.target.value })}
-                    placeholder="2024/2025"
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    onChange={(val) => setFormData({ ...formData, tahunAjaran: val })}
+                    options={tahunList.map((t) => ({ value: t, label: t }))}
+                    placeholder="Pilih Tahun Ajaran..."
+                    searchPlaceholder="Cari tahun ajaran..."
+                    required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Kapasitas Maksimal
                   </label>
                   <input
                     type="number"
                     value={formData.kapasitas}
                     onChange={(e) => setFormData({ ...formData, kapasitas: parseInt(e.target.value, 10) || 36 })}
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
                 </div>
               </div>

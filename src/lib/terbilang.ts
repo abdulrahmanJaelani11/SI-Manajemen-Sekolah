@@ -88,3 +88,49 @@ export const BULAN_AKADEMIK = [
   { urutan: 11, nama: 'Mei' },
   { urutan: 12, nama: 'Juni' },
 ]
+
+/**
+ * Menghitung urutan bulan akademik maksimal yang sudah jatuh tempo (due)
+ * relatif terhadap bulan dan tahun berjalan.
+ * 
+ * Siklus Tahun Ajaran (Juli s.d. Juni):
+ * - Urutan 1 = Juli, ..., 5 = November, 6 = Desember, 7 = Januari, ..., 12 = Juni.
+ * 
+ * Aturan:
+ * 1. Tahun Ajaran Masa Lalu (misal 2024/2025 jika sekarang 2026): seluruh 12 bulan sudah jatuh tempo -> return 12
+ * 2. Tahun Ajaran Masa Depan (misal 2027/2028 jika sekarang 2026): belum ada yang jatuh tempo -> return 0
+ * 3. Tahun Ajaran Berjalan (misal 2026/2027 saat ini di bulan November):
+ *    - Bulan Juli - Desember: urutan = bulan - 6  (Juli=1, Ags=2, Sep=3, Okt=4, Nov=5, Des=6)
+ *    - Bulan Januari - Juni:  urutan = bulan + 6  (Jan=7, Feb=8, Mar=9, Apr=10, Mei=11, Jun=12)
+ */
+export function getMaxDueUrutanBulan(tahunAjaran: string, refDate: Date = new Date()): number {
+  if (!tahunAjaran) return 12
+
+  const matches = tahunAjaran.match(/\d{4}/g)
+  if (!matches || matches.length < 2) {
+    return 12 // Fallback jika format tidak standar
+  }
+
+  const startYear = parseInt(matches[0], 10)
+  const endYear = parseInt(matches[1], 10)
+
+  const currentYear = refDate.getFullYear()
+  const currentMonth = refDate.getMonth() + 1 // 1 s.d. 12
+
+  // 1. Tahun ajaran masa lalu yang sudah selesai (setelah 30 Juni tahun akhir)
+  if (currentYear > endYear || (currentYear === endYear && currentMonth > 6)) {
+    return 12
+  }
+
+  // 2. Tahun ajaran masa depan yang belum dimulai (sebelum 1 Juli tahun awal)
+  if (currentYear < startYear || (currentYear === startYear && currentMonth < 7)) {
+    return 0
+  }
+
+  // 3. Tahun ajaran berjalan saat ini
+  if (currentMonth >= 7) {
+    return currentMonth - 6
+  } else {
+    return currentMonth + 6
+  }
+}

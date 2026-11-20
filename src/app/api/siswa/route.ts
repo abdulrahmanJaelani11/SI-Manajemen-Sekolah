@@ -19,12 +19,35 @@ export async function GET(request: NextRequest) {
     const jurusanId = searchParams.get('jurusanId')
     const status = searchParams.get('status')
     const jenisKelamin = searchParams.get('jenisKelamin')
+    const rawScope = searchParams.get('scope') // 'my_students' | 'all' | null
 
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
     const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '20', 10)))
     const skip = (page - 1) * limit
 
     const where: any = {}
+
+    // Evaluasi Penugasan Guru (GuruScope)
+    const guruScope = auth.user?.guruScope
+    let effectiveScope = rawScope
+
+    if (!effectiveScope) {
+      if (guruScope?.isGuru && (guruScope.kelasIds.length > 0 || guruScope.jenjangIds.length > 0)) {
+        effectiveScope = 'my_students'
+      } else {
+        effectiveScope = 'all'
+      }
+    }
+
+    if (effectiveScope === 'my_students' && guruScope?.isGuru) {
+      if (guruScope.kelasIds.length > 0) {
+        where.kelasId = { in: guruScope.kelasIds }
+      } else if (guruScope.jenjangIds.length > 0) {
+        where.jenjangId = { in: guruScope.jenjangIds }
+      } else if (auth.user?.jenjangId) {
+        where.jenjangId = auth.user.jenjangId
+      }
+    }
 
     if (nis) {
       const cleanNis = nis.toUpperCase().startsWith('SISWA:') ? nis.substring(6).trim() : nis
@@ -72,6 +95,15 @@ export async function GET(request: NextRequest) {
         limit,
         total,
         totalPages: Math.ceil(total / limit),
+        userScope: {
+          isGuru: !!guruScope?.isGuru,
+          effectiveScope,
+          kelasIds: guruScope?.kelasIds || [],
+          kelasNames: guruScope?.kelasNames || [],
+          jenjangIds: guruScope?.jenjangIds || [],
+          jenjangKodes: guruScope?.jenjangKodes || [],
+          defaultJenjangId: auth.user?.jenjangId || null,
+        },
       },
     })
   } catch (error: any) {

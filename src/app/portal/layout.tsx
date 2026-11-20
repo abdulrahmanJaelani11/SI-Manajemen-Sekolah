@@ -11,6 +11,8 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import prisma from '@/lib/prisma'
+import AOSInit from '@/components/portal/AOSInit'
+import ScrollToTop from '@/components/portal/ScrollToTop'
 
 export const metadata = {
   title: 'Portal Resmi Lembaga Pendidikan | Sistem Informasi Sekolah',
@@ -57,10 +59,12 @@ export default async function PortalLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased font-sans selection:bg-blue-600 selection:text-white">
-      {/* 1. TOPBAR INFORMASI KONTAK */}
-      <div className="bg-[#1E3A8A] text-blue-100 text-xs py-2 px-4 sm:px-8 border-b border-blue-800/60 hidden md:block">
+      <AOSInit />
+      <ScrollToTop />
+      {/* 1. TOPBAR INFORMASI KONTAK & AKSES SISTEM */}
+      <div className="bg-[#1E3A8A] text-blue-100 text-xs py-2 px-4 sm:px-8 border-b border-blue-800/60 block">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-6">
             {profil.telepon && (
               <div className="flex items-center gap-1.5 hover:text-white transition">
                 <Phone className="w-3.5 h-3.5 text-blue-300" />
@@ -79,7 +83,7 @@ export default async function PortalLayout({
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 w-full md:w-auto">
             {profil.npsn && (
               <span className="text-[11px] font-medium bg-blue-900/60 text-blue-200 px-2.5 py-0.5 rounded-full border border-blue-700/50">
                 NPSN: {profil.npsn}
@@ -171,31 +175,11 @@ export default async function PortalLayout({
             </Link>
             <Link
               href="/portal/ppdb"
-              className="px-3.5 py-2 rounded-xl bg-amber-50 text-amber-700 font-bold hover:bg-amber-100 border border-amber-200/80 transition"
+              className="px-4 py-2 rounded-xl bg-amber-50 text-amber-700 font-bold hover:bg-amber-100 border border-amber-200/80 transition ml-2 shadow-xs"
             >
               PPDB Online
             </Link>
           </nav>
-
-          {/* CTA Masuk Sistem */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/portal/login-siswa"
-              className="flex items-center gap-1.5 sm:gap-2 rounded-xl border border-blue-200 bg-blue-50/80 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-[#2563EB] hover:bg-blue-100 hover:border-blue-300 transition active:scale-95 shadow-xs"
-            >
-              <GraduationCap className="w-4 h-4 text-[#2563EB]" />
-              <span>Portal Siswa</span>
-            </Link>
-
-            <Link
-              href="/"
-              className="flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-blue-950/20 hover:bg-[#1E3A8A]/90 hover:shadow-lg transition active:scale-95"
-            >
-              <LogIn className="w-4 h-4 text-amber-400" />
-              <span className="hidden sm:inline">Portal Admin</span>
-              <span className="sm:hidden">Admin</span>
-            </Link>
-          </div>
         </div>
       </header>
 

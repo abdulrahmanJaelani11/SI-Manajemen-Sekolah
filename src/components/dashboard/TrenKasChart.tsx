@@ -1,15 +1,15 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { ApexOptions } from 'apexcharts'
 import { formatRupiah } from '@/lib/terbilang'
-import { BarChart3, TrendingUp, Calendar } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
 interface TrenKasChartProps {
-  data: {
+  data?: {
     bulan: string
     urutan: number
     nominal: number
@@ -18,103 +18,135 @@ interface TrenKasChartProps {
   tahunAjaran?: string
 }
 
-export default function TrenKasChart({ data, totalPenerimaan, tahunAjaran = '2024/2025' }: TrenKasChartProps) {
+export default function TrenKasChart({
+  data,
+  totalPenerimaan,
+  tahunAjaran = '2024/2025',
+}: TrenKasChartProps) {
   const [chartType, setChartType] = useState<'bar' | 'area'>('bar')
 
-  const categories = data?.map((d) => d.bulan) || [
-    'Juli', 'Ags', 'Sep', 'Okt', 'Nov', 'Des', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'
-  ]
-  const seriesData = data?.map((d) => d.nominal) || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  const categories = useMemo(() => {
+    return (
+      data?.map((d) => d.bulan) || [
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      ]
+    )
+  }, [data])
 
-  const chartOptions: ApexOptions = {
-    chart: {
-      type: chartType,
-      height: 290,
-      fontFamily: 'inherit',
-      toolbar: { show: false },
-      zoom: { enabled: false },
-      dropShadow: chartType === 'area' ? {
-        enabled: true,
-        top: 4,
-        left: 0,
-        blur: 4,
-        opacity: 0.15,
-        color: '#3b82f6',
-      } : undefined,
-    },
-    colors: ['#3b82f6'],
-    fill: {
-      type: chartType === 'area' ? 'gradient' : 'solid',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.45,
-        opacityTo: 0.05,
-        stops: [0, 95, 100],
+  const seriesData = useMemo(() => {
+    return data?.map((d) => d.nominal) || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  }, [data])
+
+  const isArea = chartType === 'area'
+
+  const chartOptions: ApexOptions = useMemo(() => {
+    return {
+      chart: {
+        id: `tren-kas-${chartType}`,
+        type: chartType,
+        height: 290,
+        fontFamily: 'inherit',
+        toolbar: { show: false },
+        zoom: { enabled: false },
+        dropShadow: {
+          enabled: isArea,
+          top: 4,
+          left: 0,
+          blur: 4,
+          opacity: isArea ? 0.15 : 0,
+          color: '#3b82f6',
+        },
       },
-    },
-    plotOptions: {
-      bar: {
-        borderRadius: 6,
-        columnWidth: '42%',
-        borderRadiusApplication: 'end',
-      },
-    },
-    dataLabels: {
-      enabled: false,
-    },
-    stroke: {
-      curve: 'smooth',
-      width: chartType === 'area' ? 3 : 0,
       colors: ['#3b82f6'],
-    },
-    xaxis: {
-      categories: categories,
-      labels: {
-        style: {
-          colors: '#64748b',
-          fontSize: '11px',
-          fontWeight: 500,
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          borderRadius: 6,
+          columnWidth: '45%',
+          borderRadiusApplication: 'end',
         },
       },
-      axisBorder: { show: false },
-      axisTicks: { show: false },
-    },
-    yaxis: {
-      labels: {
-        style: {
-          colors: '#64748b',
-          fontSize: '11px',
+      dataLabels: {
+        enabled: false,
+      },
+      stroke: isArea
+        ? {
+            curve: 'smooth',
+            width: 3,
+            colors: ['#3b82f6'],
+          }
+        : {
+            show: false,
+            width: 0,
+          },
+      fill: isArea
+        ? {
+            type: 'gradient',
+            gradient: {
+              shadeIntensity: 1,
+              opacityFrom: 0.45,
+              opacityTo: 0.05,
+              stops: [0, 95, 100],
+            },
+          }
+        : {
+            type: 'solid',
+            opacity: 1,
+          },
+      xaxis: {
+        categories: categories,
+        labels: {
+          style: {
+            colors: '#64748b',
+            fontSize: '11px',
+            fontWeight: 500,
+          },
         },
-        formatter: (val) => {
-          if (val >= 1000000) return `${(val / 1000000).toFixed(1)} jt`
-          if (val >= 1000) return `${Math.round(val / 1000)} rb`
-          return `${val}`
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+      },
+      yaxis: {
+        min: 0,
+        forceNiceScale: true,
+        labels: {
+          style: {
+            colors: '#64748b',
+            fontSize: '11px',
+          },
+          formatter: (val) => {
+            if (val >= 1000000) return `${(val / 1000000).toFixed(1)} jt`
+            if (val >= 1000) return `${Math.round(val / 1000)} rb`
+            return `${val}`
+          },
         },
       },
-    },
-    grid: {
-      borderColor: '#f1f5f9',
-      strokeDashArray: 4,
-      yaxis: { lines: { show: true } },
-      xaxis: { lines: { show: false } },
-    },
-    tooltip: {
-      theme: 'dark',
-      y: {
-        formatter: (val) => formatRupiah(val),
-        title: {
-          formatter: () => 'Kas Terkumpul: ',
+      grid: {
+        borderColor: '#f1f5f9',
+        strokeDashArray: 4,
+        yaxis: { lines: { show: true } },
+        xaxis: { lines: { show: false } },
+      },
+      tooltip: {
+        theme: 'dark',
+        y: {
+          formatter: (val) => formatRupiah(val),
+          title: {
+            formatter: () => 'Kas Terkumpul: ',
+          },
         },
       },
-    },
-  }
+    }
+  }, [chartType, categories, isArea])
 
-  const series = [
-    {
-      name: 'Realisasi Kas SPP',
-      data: seriesData,
-    },
-  ]
+  const series = useMemo(() => {
+    return [
+      {
+        name: 'Realisasi Kas SPP',
+        data: seriesData,
+      },
+    ]
+  }, [seriesData])
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
@@ -140,6 +172,7 @@ export default function TrenKasChart({ data, totalPenerimaan, tahunAjaran = '202
           {/* Toggle Type */}
           <div className="flex items-center rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800 text-xs">
             <button
+              type="button"
               onClick={() => setChartType('bar')}
               className={`rounded-md px-2.5 py-1 font-semibold transition ${
                 chartType === 'bar'
@@ -150,6 +183,7 @@ export default function TrenKasChart({ data, totalPenerimaan, tahunAjaran = '202
               Batang
             </button>
             <button
+              type="button"
               onClick={() => setChartType('area')}
               className={`rounded-md px-2.5 py-1 font-semibold transition ${
                 chartType === 'area'
@@ -169,7 +203,13 @@ export default function TrenKasChart({ data, totalPenerimaan, tahunAjaran = '202
 
       {/* Area Render Chart */}
       <div className="pt-4 -ml-3">
-        <Chart options={chartOptions} series={series} type={chartType} height={290} />
+        <Chart
+          key={chartType}
+          options={chartOptions}
+          series={series}
+          type={chartType}
+          height={290}
+        />
       </div>
 
       {/* Catatan / Keterangan Kaki */}

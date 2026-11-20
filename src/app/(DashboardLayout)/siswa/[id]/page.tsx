@@ -27,6 +27,7 @@ import {
   Building2,
   Sparkles,
   Camera,
+  CameraOff,
   X,
   Coins,
   ChevronRight,
@@ -199,6 +200,9 @@ export default function DetailSiswaPage() {
     setIsEditModalOpen(true)
   }
 
+  // Photo Management State & Handlers
+  const [isDeletingPhoto, setIsDeletingPhoto] = useState(false)
+
   // Handle Photo Upload in Edit Modal
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -225,6 +229,35 @@ export default function DetailSiswaPage() {
       setEditError('Error unggah foto: ' + err.message)
     } finally {
       setIsUploadingPhoto(false)
+      if (e.target) {
+        e.target.value = ''
+      }
+    }
+  }
+
+  // Handle Hapus Foto Siswa Langsung
+  const handleDeletePhotoDirect = async () => {
+    if (!siswa?.fotoUrl) return
+    const confirmed = window.confirm(
+      `Apakah Anda yakin ingin menghapus foto profil siswa "${siswa.nama}"?`
+    )
+    if (!confirmed) return
+
+    setIsDeletingPhoto(true)
+    try {
+      const res = await fetch(`/api/siswa/${siswaId}/foto`, {
+        method: 'DELETE',
+      })
+      const json = await res.json()
+      if (json.success) {
+        await fetchSiswa()
+      } else {
+        alert(json.message || 'Gagal menghapus foto siswa')
+      }
+    } catch (err: any) {
+      alert('Error saat menghapus foto: ' + err.message)
+    } finally {
+      setIsDeletingPhoto(false)
     }
   }
 
@@ -383,6 +416,19 @@ export default function DetailSiswaPage() {
             </button>
           )}
 
+          {/* Hapus Foto Siswa */}
+          {allowEdit && siswa.fotoUrl && (
+            <button
+              onClick={handleDeletePhotoDirect}
+              disabled={isDeletingPhoto}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3.5 py-2 text-xs font-bold text-rose-600 shadow-xs hover:bg-rose-50 dark:border-rose-900/40 dark:bg-slate-900 dark:text-rose-400 dark:hover:bg-rose-950/40 transition disabled:opacity-50"
+              title="Hapus Foto Siswa"
+            >
+              <CameraOff className="h-3.5 w-3.5 text-rose-500" />
+              <span>{isDeletingPhoto ? 'Menghapus...' : 'Hapus Foto'}</span>
+            </button>
+          )}
+
           {/* Cetak Profil */}
           <button
             onClick={() => window.print()}
@@ -414,13 +460,27 @@ export default function DetailSiswaPage() {
           {/* Profile Left: Avatar + Details */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
             {/* Foto Profil */}
-            <div className="relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-xs dark:border-slate-700 dark:bg-slate-800">
+            <div className="relative group h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-xs dark:border-slate-700 dark:bg-slate-800">
               {siswa.fotoUrl ? (
-                <img
-                  src={siswa.fotoUrl}
-                  alt={siswa.nama}
-                  className="h-full w-full object-cover"
-                />
+                <>
+                  <img
+                    src={siswa.fotoUrl}
+                    alt={siswa.nama}
+                    className="h-full w-full object-cover"
+                  />
+                  {allowEdit && (
+                    <button
+                      type="button"
+                      onClick={handleDeletePhotoDirect}
+                      disabled={isDeletingPhoto}
+                      title="Hapus Foto Siswa"
+                      className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-semibold"
+                    >
+                      <Trash2 className="h-5 w-5 text-rose-400 mb-0.5" />
+                      <span>{isDeletingPhoto ? 'Menghapus...' : 'Hapus Foto'}</span>
+                    </button>
+                  )}
+                </>
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-gradient-to-tr from-blue-600 to-indigo-600 text-2xl sm:text-3xl font-bold text-white">
                   {siswa.nama.charAt(0).toUpperCase()}
@@ -508,7 +568,7 @@ export default function DetailSiswaPage() {
             </div>
             <div>
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                Sisa Tunggakan SPP ({tahunAjaran})
+                Tunggakan Jatuh Tempo ({tahunAjaran})
               </p>
               <div className="flex items-baseline gap-1.5">
                 <span
@@ -711,13 +771,18 @@ export default function DetailSiswaPage() {
             {/* Sisa Tunggakan */}
             <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900 flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Sisa Tunggakan Tagihan</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Tunggakan Jatuh Tempo</p>
                 <h4 className={`text-xl font-bold font-mono mt-1 ${summary.totalEstimasiTunggakan > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>
                   {formatRupiah(summary.totalEstimasiTunggakan)}
                 </h4>
                 <p className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">
-                  {summary.totalBulanTunggakan} Bulan Belum Bayar
+                  {summary.totalBulanTunggakan} Bulan Jatuh Tempo
                 </p>
+                {summary.totalBulanMendatang > 0 && (
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    +{summary.totalBulanMendatang} bln mendatang ({formatRupiah(summary.totalEstimasiMendatang)})
+                  </p>
+                )}
               </div>
               <div className="h-11 w-11 rounded-xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-rose-600 dark:text-rose-400">
                 <Clock className="h-5 w-5" />
@@ -763,8 +828,14 @@ export default function DetailSiswaPage() {
                 </span>
                 <span className="flex items-center gap-1.5 font-medium text-rose-700 dark:text-rose-400">
                   <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
-                  Belum Bayar ({summary.totalBulanTunggakan})
+                  Jatuh Tempo ({summary.totalBulanTunggakan})
                 </span>
+                {summary.totalBulanMendatang > 0 && (
+                  <span className="flex items-center gap-1.5 font-medium text-slate-500 dark:text-slate-400">
+                    <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+                    Mendatang ({summary.totalBulanMendatang})
+                  </span>
+                )}
               </div>
             </div>
 
@@ -776,13 +847,16 @@ export default function DetailSiswaPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
                 {months.map((item: any) => {
                   const isPaid = item.status === 'paid'
+                  const isUpcoming = item.status === 'upcoming'
                   return (
                     <div
                       key={item.urutan}
                       className={`relative flex flex-col justify-between rounded-xl border p-3.5 transition ${
                         isPaid
                           ? 'border-emerald-200 bg-emerald-50/40 dark:border-emerald-900/50 dark:bg-emerald-950/20'
-                          : 'border-dashed border-slate-300 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-800/30'
+                          : isUpcoming
+                          ? 'border-slate-200 bg-slate-50/40 dark:border-slate-800 dark:bg-slate-900/20'
+                          : 'border-dashed border-rose-300 bg-rose-50/30 dark:border-rose-900/40 dark:bg-rose-950/10'
                       }`}
                     >
                       <div>
@@ -802,6 +876,8 @@ export default function DetailSiswaPage() {
                             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                               isPaid
                                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                : isUpcoming
+                                ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
                                 : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
                             }`}
                           >
@@ -810,10 +886,15 @@ export default function DetailSiswaPage() {
                                 <CheckCircle2 className="h-3 w-3" />
                                 <span>Lunas</span>
                               </>
+                            ) : isUpcoming ? (
+                              <>
+                                <Clock className="h-3 w-3 text-slate-400" />
+                                <span>Mendatang</span>
+                              </>
                             ) : (
                               <>
                                 <Clock className="h-3 w-3" />
-                                <span>Belum Bayar</span>
+                                <span>Jatuh Tempo</span>
                               </>
                             )}
                           </span>
@@ -1297,29 +1378,53 @@ export default function DetailSiswaPage() {
               {/* Foto Profil & Identitas Dasar */}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                  <div className="relative group h-20 w-20 overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800 shadow-inner">
                     {editFormData.fotoUrl ? (
-                      <img
-                        src={editFormData.fotoUrl}
-                        alt="Preview"
-                        className="h-full w-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={editFormData.fotoUrl}
+                          alt="Preview"
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setEditFormData((prev: any) => ({ ...prev, fotoUrl: '' }))}
+                          title="Hapus foto saat ini"
+                          className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="h-4 w-4 text-rose-400 mb-0.5" />
+                          <span className="text-[9px] font-semibold">Hapus</span>
+                        </button>
+                      </>
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-slate-400">
                         <User className="h-8 w-8" />
                       </div>
                     )}
                   </div>
-                  <label className="cursor-pointer rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300">
-                    {isUploadingPhoto ? 'Mengunggah...' : 'Pilih Foto'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      disabled={isUploadingPhoto}
-                      className="hidden"
-                    />
-                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="cursor-pointer rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300 transition">
+                      {isUploadingPhoto ? 'Mengunggah...' : editFormData.fotoUrl ? 'Ganti Foto' : 'Pilih Foto'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        disabled={isUploadingPhoto}
+                        className="hidden"
+                      />
+                    </label>
+                    {editFormData.fotoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setEditFormData((prev: any) => ({ ...prev, fotoUrl: '' }))}
+                        className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-400 transition"
+                        title="Hapus foto siswa"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        <span>Hapus</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">

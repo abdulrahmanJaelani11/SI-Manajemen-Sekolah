@@ -2,10 +2,13 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const includeInactive = searchParams.get('includeInactive') === 'true'
+
     const jenjang = await prisma.refJenjang.findMany({
-      where: { active: true },
+      where: includeInactive ? undefined : { active: true },
       orderBy: { urutan: 'asc' },
       include: {
         tingkat: {

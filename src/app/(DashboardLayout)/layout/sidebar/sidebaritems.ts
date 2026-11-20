@@ -366,6 +366,13 @@ const SidebarContent: MenuItem[] = [
         isPro: false,
       },
       {
+        name: 'Manajemen Menu',
+        icon: 'solar:menu-dots-square-linear',
+        id: uniqueId(),
+        url: '/pengaturan/menu',
+        isPro: false,
+      },
+      {
         name: 'Profil & Tema Sekolah',
         icon: 'solar:settings-linear',
         id: uniqueId(),

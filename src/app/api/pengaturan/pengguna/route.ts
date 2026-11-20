@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
         namaLengkap: true,
         email: true,
         roleId: true,
+        pegawaiId: true,
+        jenjangId: true,
         active: true,
         createdAt: true,
         role: {
@@ -25,17 +27,55 @@ export async function GET(request: NextRequest) {
             namaRole: true,
           },
         },
+        pegawai: {
+          select: {
+            id: true,
+            nama: true,
+            nip: true,
+            jenisPegawai: true,
+            bidangStudi: true,
+          },
+        },
+        jenjang: {
+          select: {
+            id: true,
+            kode: true,
+            nama: true,
+          },
+        },
       },
     })
 
-    const roles = await prisma.secRole.findMany({
-      where: { active: true },
-      orderBy: { id: 'asc' },
-    })
+    const [roles, pegawais, jenjangs] = await Promise.all([
+      prisma.secRole.findMany({
+        where: { active: true },
+        orderBy: { id: 'asc' },
+      }),
+      prisma.pegawai.findMany({
+        where: { active: true },
+        orderBy: { nama: 'asc' },
+        select: {
+          id: true,
+          nama: true,
+          nip: true,
+          jenisPegawai: true,
+          bidangStudi: true,
+        },
+      }),
+      prisma.refJenjang.findMany({
+        where: { active: true },
+        orderBy: { urutan: 'asc' },
+        select: {
+          id: true,
+          kode: true,
+          nama: true,
+        },
+      }),
+    ])
 
     return apiSuccess({
       message: 'Data pengguna berhasil dimuat',
-      data: { users, roles },
+      data: { users, roles, pegawais, jenjangs },
     })
   } catch (error: any) {
     console.error('API User GET Error:', error)
@@ -49,7 +89,7 @@ export async function POST(request: NextRequest) {
     if (auth.errorResponse) return auth.errorResponse
 
     const body = await request.json()
-    const { username, password, namaLengkap, email, roleId } = body
+    const { username, password, namaLengkap, email, roleId, pegawaiId, jenjangId } = body
 
     if (!username || !password || !namaLengkap || !roleId) {
       return apiError('Username, Password, Nama Lengkap, dan Role wajib diisi', 400)
@@ -67,6 +107,17 @@ export async function POST(request: NextRequest) {
       return apiError(`Username "${cleanUsername}" sudah digunakan`, 409)
     }
 
+    // Jika pegawaiId diisi, pastikan belum dipakai oleh akun lain
+    const parsedPegawaiId = pegawaiId ? parseInt(pegawaiId, 10) : null
+    if (parsedPegawaiId) {
+      const existingPegawaiUser = await prisma.secUser.findUnique({
+        where: { pegawaiId: parsedPegawaiId },
+      })
+      if (existingPegawaiUser) {
+        return apiError('Profil Pegawai ini sudah ditautkan ke akun lain', 409)
+      }
+    }
+
     const hashedPassword = await hashPassword(password)
 
     const created = await prisma.secUser.create({
@@ -76,10 +127,14 @@ export async function POST(request: NextRequest) {
         namaLengkap: String(namaLengkap).trim(),
         email: email ? String(email).trim() : null,
         roleId: parseInt(roleId, 10),
+        pegawaiId: parsedPegawaiId,
+        jenjangId: jenjangId ? parseInt(jenjangId, 10) : null,
         active: true,
       },
       include: {
         role: true,
+        pegawai: true,
+        jenjang: true,
       },
     })
 
@@ -91,6 +146,8 @@ export async function POST(request: NextRequest) {
         namaLengkap: created.namaLengkap,
         email: created.email,
         role: created.role,
+        pegawai: created.pegawai,
+        jenjang: created.jenjang,
         active: created.active,
       },
       status: 201,

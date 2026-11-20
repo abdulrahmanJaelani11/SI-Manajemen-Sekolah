@@ -27,6 +27,7 @@ export default function RiwayatSppPage() {
   // Filters
   const [search, setSearch] = useState('')
   const [tahunAjaran, setTahunAjaran] = useState('')
+  const [tahunList, setTahunList] = useState<string[]>([])
   const [bulan, setBulan] = useState('')
   const [status, setStatus] = useState('')
   const [metodeBayar, setMetodeBayar] = useState('')
@@ -59,6 +60,17 @@ export default function RiwayatSppPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetch('/api/akademik/tahun-ajaran/aktif')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data?.tahunList) {
+          setTahunList(json.data.tahunList)
+        }
+      })
+      .catch((err) => console.error('Fetch tahun ajaran error:', err))
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -140,9 +152,7 @@ export default function RiwayatSppPage() {
               onChange={(val) => setTahunAjaran(val)}
               options={[
                 { value: '', label: 'Semua Tahun Ajaran' },
-                { value: '2024/2025', label: '2024/2025' },
-                { value: '2025/2026', label: '2025/2026' },
-                { value: '2023/2024', label: '2023/2024' },
+                ...tahunList.map((t) => ({ value: t, label: t })),
               ]}
               placeholder="Semua Tahun Ajaran"
               searchPlaceholder="Cari tahun..."

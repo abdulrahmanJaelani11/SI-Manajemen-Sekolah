@@ -780,12 +780,16 @@ export default function TagihanNonSppPage() {
                 </div>
                 <div>
                   <label className="block font-bold mb-1">Tahun Ajaran *</label>
-                  <input
-                    type="text"
-                    required
+                  <SearchableSelect
                     value={genForm.tahunAjaran}
-                    onChange={(e) => setGenForm({ ...genForm, tahunAjaran: e.target.value })}
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2"
+                    onChange={(val) => setGenForm({ ...genForm, tahunAjaran: val })}
+                    options={Array.from(new Set(tahunAjaranList.map((t: any) => t.nama))).map((ta) => ({
+                      value: ta,
+                      label: ta,
+                    }))}
+                    placeholder="Pilih Tahun Ajaran..."
+                    searchPlaceholder="Cari tahun ajaran..."
+                    required
                   />
                 </div>
               </div>

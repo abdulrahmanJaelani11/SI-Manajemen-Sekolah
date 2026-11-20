@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { formatRupiah, terbilang } from '@/lib/terbilang'
 import { BukuKasItem } from '@/app/api/keuangan/laporan/route'
+import SearchableSelect from '@/components/ui/searchable-select'
 
 export default function LaporanKeuanganPage() {
   const [loading, setLoading] = useState(true)
@@ -68,6 +69,40 @@ export default function LaporanKeuanganPage() {
   const [filterMetode, setFilterMetode] = useState('all')
   const [filterTahunAjaran, setFilterTahunAjaran] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Filter dropdown options (SearchableSelect standard)
+  const sumberOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Semua Aliran Kas' },
+      { value: 'spp', label: 'Hanya Kasir SPP' },
+      { value: 'tagihan', label: 'Hanya Tagihan Siswa' },
+      { value: 'kas_umum', label: 'Kas Umum (Masuk & Keluar)' },
+      { value: 'kas_masuk', label: 'Hanya Kas Masuk Lain' },
+      { value: 'kas_keluar', label: 'Hanya Pengeluaran Kas' },
+    ],
+    []
+  )
+
+  const metodeOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Semua Metode' },
+      { value: 'Tunai', label: 'Tunai' },
+      { value: 'Transfer', label: 'Bank / Transfer' },
+      { value: 'QRIS', label: 'QRIS' },
+    ],
+    []
+  )
+
+  const tahunAjaranOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Semua Tahun Ajaran' },
+      ...tahunAjaranList.map((ta) => ({
+        value: ta.nama,
+        label: `${ta.nama} ${ta.status === 'aktif' ? '(Aktif)' : ''}`.trim(),
+      })),
+    ],
+    [tahunAjaranList]
+  )
 
   // View state: 'buku_kas' | 'analisis'
   const [activeTab, setActiveTab] = useState<'buku_kas' | 'analisis'>('buku_kas')
@@ -908,7 +943,7 @@ export default function LaporanKeuanganPage() {
                 setStartDate(e.target.value)
                 setPresetPeriode('kustom')
               }}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              className="w-full h-[38px] px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
             />
           </div>
 
@@ -924,7 +959,7 @@ export default function LaporanKeuanganPage() {
                 setEndDate(e.target.value)
                 setPresetPeriode('kustom')
               }}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              className="w-full h-[38px] px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
             />
           </div>
 
@@ -933,18 +968,14 @@ export default function LaporanKeuanganPage() {
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               Sumber Aliran
             </label>
-            <select
+            <SearchableSelect
               value={filterSumber}
-              onChange={(e) => setFilterSumber(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
-            >
-              <option value="all">Semua Aliran Kas</option>
-              <option value="spp">Hanya Kasir SPP</option>
-              <option value="tagihan">Hanya Tagihan Siswa</option>
-              <option value="kas_umum">Kas Umum (Masuk & Keluar)</option>
-              <option value="kas_masuk">Hanya Kas Masuk Lain</option>
-              <option value="kas_keluar">Hanya Pengeluaran Kas</option>
-            </select>
+              onChange={(val) => setFilterSumber(val)}
+              options={sumberOptions}
+              placeholder="Pilih Sumber Aliran..."
+              searchPlaceholder="Cari sumber aliran..."
+              triggerClassName="!h-[38px] !text-xs !rounded-xl !border-gray-200 dark:!border-gray-700 !bg-gray-50 dark:!bg-gray-900 text-gray-900 dark:text-white"
+            />
           </div>
 
           {/* Filter Metode */}
@@ -952,16 +983,14 @@ export default function LaporanKeuanganPage() {
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               Metode Pembayaran
             </label>
-            <select
+            <SearchableSelect
               value={filterMetode}
-              onChange={(e) => setFilterMetode(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
-            >
-              <option value="all">Semua Metode</option>
-              <option value="Tunai">Tunai</option>
-              <option value="Transfer">Bank / Transfer</option>
-              <option value="QRIS">QRIS</option>
-            </select>
+              onChange={(val) => setFilterMetode(val)}
+              options={metodeOptions}
+              placeholder="Pilih Metode..."
+              searchPlaceholder="Cari metode..."
+              triggerClassName="!h-[38px] !text-xs !rounded-xl !border-gray-200 dark:!border-gray-700 !bg-gray-50 dark:!bg-gray-900 text-gray-900 dark:text-white"
+            />
           </div>
 
           {/* Filter Tahun Ajaran */}
@@ -969,18 +998,14 @@ export default function LaporanKeuanganPage() {
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               Tahun Ajaran
             </label>
-            <select
+            <SearchableSelect
               value={filterTahunAjaran}
-              onChange={(e) => setFilterTahunAjaran(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
-            >
-              <option value="all">Semua Tahun Ajaran</option>
-              {tahunAjaranList.map((ta) => (
-                <option key={ta.id} value={ta.nama}>
-                  {ta.nama} {ta.status === 'aktif' ? '(Aktif)' : ''}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setFilterTahunAjaran(val)}
+              options={tahunAjaranOptions}
+              placeholder="Pilih Tahun Ajaran..."
+              searchPlaceholder="Cari tahun ajaran..."
+              triggerClassName="!h-[38px] !text-xs !rounded-xl !border-gray-200 dark:!border-gray-700 !bg-gray-50 dark:!bg-gray-900 text-gray-900 dark:text-white"
+            />
           </div>
         </div>
 

@@ -19,15 +19,33 @@ interface Role {
   namaRole: string
 }
 
+interface PegawaiOption {
+  id: number
+  nama: string
+  nip?: string | null
+  jenisPegawai: string
+  bidangStudi?: string | null
+}
+
+interface JenjangOption {
+  id: number
+  kode: string
+  nama: string
+}
+
 interface UserItem {
   id: number
   username: string
   namaLengkap: string
   email?: string
   roleId: number
+  pegawaiId?: number | null
+  jenjangId?: number | null
   active: boolean
   createdAt: string
   role: { id: number; namaRole: string }
+  pegawai?: PegawaiOption | null
+  jenjang?: JenjangOption | null
 }
 
 export default function PenggunaPage() {
@@ -38,6 +56,8 @@ export default function PenggunaPage() {
 
   const [users, setUsers] = useState<UserItem[]>([])
   const [roles, setRoles] = useState<Role[]>([])
+  const [pegawais, setPegawais] = useState<PegawaiOption[]>([])
+  const [jenjangs, setJenjangs] = useState<JenjangOption[]>([])
   const [loading, setLoading] = useState(true)
 
   // Modals
@@ -51,6 +71,8 @@ export default function PenggunaPage() {
     namaLengkap: '',
     email: '',
     roleId: '',
+    pegawaiId: '',
+    jenjangId: '',
     active: true,
   })
   const [formError, setFormError] = useState('')
@@ -64,6 +86,8 @@ export default function PenggunaPage() {
       if (data.success) {
         setUsers(data.data.users)
         setRoles(data.data.roles)
+        setPegawais(data.data.pegawais || [])
+        setJenjangs(data.data.jenjangs || [])
       }
     } catch (err) {
       console.error('Fetch users error:', err)
@@ -76,6 +100,18 @@ export default function PenggunaPage() {
     fetchUsers()
   }, [])
 
+  const handleSelectPegawai = (val: string) => {
+    const selected = pegawais.find((p) => String(p.id) === val)
+    setFormData((prev) => ({
+      ...prev,
+      pegawaiId: val,
+      namaLengkap:
+        (!prev.namaLengkap || (editingUser && prev.namaLengkap === editingUser.namaLengkap)) && selected
+          ? selected.nama
+          : prev.namaLengkap,
+    }))
+  }
+
   const handleOpenAdd = () => {
     setEditingUser(null)
     setFormData({
@@ -84,6 +120,8 @@ export default function PenggunaPage() {
       namaLengkap: '',
       email: '',
       roleId: roles[0] ? String(roles[0].id) : '1',
+      pegawaiId: '',
+      jenjangId: '',
       active: true,
     })
     setFormError('')
@@ -98,6 +136,8 @@ export default function PenggunaPage() {
       namaLengkap: user.namaLengkap,
       email: user.email || '',
       roleId: String(user.roleId),
+      pegawaiId: user.pegawaiId ? String(user.pegawaiId) : '',
+      jenjangId: user.jenjangId ? String(user.jenjangId) : '',
       active: user.active,
     })
     setFormError('')
@@ -192,6 +232,9 @@ export default function PenggunaPage() {
                   Peran (Role)
                 </th>
                 <th scope="col" className="px-4 py-3.5 text-center">
+                  Tautan Pegawai & Jenjang
+                </th>
+                <th scope="col" className="px-4 py-3.5 text-center">
                   Status
                 </th>
                 <th scope="col" className="px-4 py-3.5 text-right">
@@ -202,7 +245,7 @@ export default function PenggunaPage() {
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500">
+                  <td colSpan={7} className="py-12 text-center text-slate-500">
                     Memuat daftar akun pengguna...
                   </td>
                 </tr>
@@ -241,6 +284,25 @@ export default function PenggunaPage() {
                         <ShieldCheck className="h-3 w-3" />
                         {u.role.namaRole}
                       </span>
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        {u.pegawai ? (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                            👨‍🏫 {u.pegawai.nama}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">Tanpa Pegawai</span>
+                        )}
+                        {u.jenjang ? (
+                          <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                            Jenjang {u.jenjang.kode}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">Semua Jenjang</span>
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-4 py-3 text-center">
@@ -382,6 +444,52 @@ export default function PenggunaPage() {
                   searchPlaceholder="Cari peran..."
                   required
                 />
+              </div>
+
+              {/* Tautan Profil Pegawai / Guru */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Tautkan Profil Pegawai / Guru (Opsional)
+                </label>
+                <SearchableSelect
+                  value={formData.pegawaiId}
+                  onChange={handleSelectPegawai}
+                  options={[
+                    { value: '', label: '-- Tanpa Tautan Pegawai --' },
+                    ...pegawais.map((p) => ({
+                      value: String(p.id),
+                      label: `${p.nama}${p.nip ? ` (NIP: ${p.nip})` : ''} - [${p.jenisPegawai.toUpperCase()}${p.bidangStudi ? ` / ${p.bidangStudi}` : ''}]`,
+                    })),
+                  ]}
+                  placeholder="Pilih Profil Pegawai/Guru"
+                  searchPlaceholder="Cari nama atau NIP guru..."
+                />
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Menautkan akun ini secara otomatis dengan penugasan jam mengajar, kelas binaan, dan jadwal mengajar guru.
+                </p>
+              </div>
+
+              {/* Jenjang Penugasan Utama */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Jenjang Penugasan Utama (Opsional)
+                </label>
+                <SearchableSelect
+                  value={formData.jenjangId}
+                  onChange={(val) => setFormData({ ...formData, jenjangId: val })}
+                  options={[
+                    { value: '', label: '-- Semua Jenjang / Bebas --' },
+                    ...jenjangs.map((j) => ({
+                      value: String(j.id),
+                      label: `${j.kode} - ${j.nama}`,
+                    })),
+                  ]}
+                  placeholder="Pilih Jenjang Penugasan"
+                  searchPlaceholder="Cari jenjang..."
+                />
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Menentukan jenjang kerja utama guru/staf sebagai filter bawaan saat membuka data akademik siswa.
+                </p>
               </div>
 
               {editingUser && (

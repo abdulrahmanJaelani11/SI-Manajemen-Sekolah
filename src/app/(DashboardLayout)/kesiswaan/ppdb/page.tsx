@@ -94,6 +94,8 @@ export default function AdminPpdbPage() {
   const [isWaveModalOpen, setIsWaveModalOpen] = useState(false)
   const [editingWave, setEditingWave] = useState<any>(null)
   const [savingWave, setSavingWave] = useState(false)
+  const [tahunList, setTahunList] = useState<string[]>([])
+  const [activeTa, setActiveTa] = useState('2025/2026')
   const [waveForm, setWaveForm] = useState({
     nama: '',
     tahunAjaran: '2025/2026',
@@ -114,14 +116,24 @@ export default function AdminPpdbPage() {
       if (filterStatus !== 'all') params.set('statusSeleksi', filterStatus)
       if (searchQuery.trim()) params.set('search', searchQuery.trim())
 
-      const res = await fetch(`/api/kesiswaan/ppdb?${params.toString()}`)
+      const [res, resTa] = await Promise.all([
+        fetch(`/api/kesiswaan/ppdb?${params.toString()}`),
+        fetch('/api/akademik/tahun-ajaran/aktif'),
+      ])
       const json = await res.json()
+      const jsonTa = await resTa.json()
       if (json.success && json.data) {
         setPendaftarList(json.data.pendaftarList || [])
         setStats(json.data.stats)
         setGelombangList(json.data.gelombangList || [])
         setJenjangList(json.data.jenjangList || [])
         setKelasList(json.data.kelasList || [])
+      }
+      if (jsonTa.success && jsonTa.data) {
+        setTahunList(jsonTa.data.tahunList || [])
+        if (jsonTa.data.activePeriod?.nama) {
+          setActiveTa(jsonTa.data.activePeriod.nama)
+        }
       }
     } catch (err) {
       console.error('Fetch PPDB admin error:', err)
@@ -251,7 +263,7 @@ export default function AdminPpdbPage() {
       setEditingWave(null)
       setWaveForm({
         nama: '',
-        tahunAjaran: '2025/2026',
+        tahunAjaran: activeTa,
         tanggalMulai: new Date().toISOString().slice(0, 10),
         tanggalSelesai: '',
         kuotaTotal: 100,
@@ -868,13 +880,13 @@ export default function AdminPpdbPage() {
               </div>
               <div>
                 <label className="block font-bold mb-1">Tahun Ajaran Target *</label>
-                <input
-                  type="text"
-                  required
+                <SearchableSelect
                   value={waveForm.tahunAjaran}
-                  onChange={(e) => setWaveForm({ ...waveForm, tahunAjaran: e.target.value })}
-                  placeholder="2025/2026"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2"
+                  onChange={(val) => setWaveForm({ ...waveForm, tahunAjaran: val })}
+                  options={tahunList.map((t) => ({ value: t, label: t }))}
+                  placeholder="Pilih Tahun Ajaran..."
+                  searchPlaceholder="Cari tahun ajaran..."
+                  required
                 />
               </div>
               <div>

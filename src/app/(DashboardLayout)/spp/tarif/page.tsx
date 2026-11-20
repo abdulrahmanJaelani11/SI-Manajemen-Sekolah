@@ -9,10 +9,12 @@ import {
   X,
   AlertCircle,
   Coins,
+  GraduationCap,
 } from 'lucide-react'
 import { formatRupiah } from '@/lib/terbilang'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import { useInstitution } from '@/context/InstitutionContext'
 
 interface TarifItem {
   id: number
@@ -32,14 +34,24 @@ export default function MasterTarifSppPage() {
   const allowCreate = canCreate('/spp/tarif')
   const allowEdit = canEdit('/spp/tarif')
   const allowDelete = canDelete('/spp/tarif')
+  const { isSingleJenjang, defaultJenjangId, jenjangUtama } = useInstitution()
 
   const [tarifList, setTarifList] = useState<TarifItem[]>([])
   const [masterJenjang, setMasterJenjang] = useState<any[]>([])
+  const [tahunList, setTahunList] = useState<string[]>([])
+  const [activeTa, setActiveTa] = useState('2024/2025')
   const [loading, setLoading] = useState(true)
 
   // Filters
   const [selectedJenjang, setSelectedJenjang] = useState('')
   const [tahunAjaran, setTahunAjaran] = useState('')
+
+  // Sinkronisasi otomatis jenjang pada mode Single-Jenjang
+  useEffect(() => {
+    if (isSingleJenjang && defaultJenjangId) {
+      setSelectedJenjang(String(defaultJenjangId))
+    }
+  }, [isSingleJenjang, defaultJenjangId])
 
   // Modals
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -77,9 +89,19 @@ export default function MasterTarifSppPage() {
 
   const fetchMaster = async () => {
     try {
-      const res = await fetch('/api/master/jenjang')
-      const data = await res.json()
-      if (data.success) setMasterJenjang(data.data)
+      const [resJenjang, resTa] = await Promise.all([
+        fetch('/api/master/jenjang'),
+        fetch('/api/akademik/tahun-ajaran/aktif'),
+      ])
+      const dataJenjang = await resJenjang.json()
+      const dataTa = await resTa.json()
+      if (dataJenjang.success) setMasterJenjang(dataJenjang.data)
+      if (dataTa.success && dataTa.data) {
+        setTahunList(dataTa.data.tahunList || [])
+        if (dataTa.data.activePeriod?.nama) {
+          setActiveTa(dataTa.data.activePeriod.nama)
+        }
+      }
     } catch (err) {
       console.error('Fetch master error:', err)
     }
@@ -95,11 +117,13 @@ export default function MasterTarifSppPage() {
 
   const handleOpenAdd = () => {
     setEditingTarif(null)
-    const defaultJ = masterJenjang[0]
+    const defaultJ = (isSingleJenjang && defaultJenjangId
+      ? masterJenjang.find((j) => j.id === defaultJenjangId)
+      : masterJenjang[0]) || masterJenjang[0]
     setFormData({
       jenjangId: defaultJ ? String(defaultJ.id) : '',
       tingkatId: '',
-      tahunAjaran: '2024/2025',
+      tahunAjaran: activeTa,
       namaTarif: 'SPP Bulanan',
       nominal: 150000,
       keterangan: '',
@@ -197,21 +221,23 @@ export default function MasterTarifSppPage() {
 
       {/* Filter Toolbar */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="w-full sm:w-60">
-          <SearchableSelect
-            value={selectedJenjang}
-            onChange={(val) => setSelectedJenjang(val)}
-            options={[
-              { value: '', label: 'Semua Jenjang' },
-              ...masterJenjang.map((j) => ({
-                value: String(j.id),
-                label: `${j.kode} (${j.nama})`,
-              })),
-            ]}
-            placeholder="Semua Jenjang"
-            searchPlaceholder="Cari jenjang..."
-          />
-        </div>
+        {!isSingleJenjang && (
+          <div className="w-full sm:w-60">
+            <SearchableSelect
+              value={selectedJenjang}
+              onChange={(val) => setSelectedJenjang(val)}
+              options={[
+                { value: '', label: 'Semua Jenjang' },
+                ...masterJenjang.map((j) => ({
+                  value: String(j.id),
+                  label: `${j.kode} (${j.nama})`,
+                })),
+              ]}
+              placeholder="Semua Jenjang"
+              searchPlaceholder="Cari jenjang..."
+            />
+          </div>
+        )}
 
         <div className="w-full sm:w-48">
           <SearchableSelect
@@ -219,9 +245,7 @@ export default function MasterTarifSppPage() {
             onChange={(val) => setTahunAjaran(val)}
             options={[
               { value: '', label: 'Semua Tahun Ajaran' },
-              { value: '2024/2025', label: '2024/2025' },
-              { value: '2025/2026', label: '2025/2026' },
-              { value: '2023/2024', label: '2023/2024' },
+              ...tahunList.map((t) => ({ value: t, label: t })),
             ]}
             placeholder="Semua Tahun Ajaran"
             searchPlaceholder="Cari tahun ajaran..."
@@ -236,7 +260,7 @@ export default function MasterTarifSppPage() {
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300">
               <tr>
                 <th scope="col" className="px-4 py-3.5">
-                  Jenjang & Sasaran Tingkat
+                  {isSingleJenjang ? 'Sasaran Tingkat' : 'Jenjang & Sasaran Tingkat'}
                 </th>
                 <th scope="col" className="px-4 py-3.5">
                   Nama Pos Tarif
@@ -278,10 +302,12 @@ export default function MasterTarifSppPage() {
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
                   >
                     <td className="px-4 py-3">
-                      <p className="font-bold text-slate-900 dark:text-white">
-                        {t.jenjang.kode} ({t.jenjang.nama})
-                      </p>
-                      <p className="text-xs text-slate-500">
+                      {!isSingleJenjang && (
+                        <p className="font-bold text-slate-900 dark:text-white">
+                          {t.jenjang.kode} ({t.jenjang.nama})
+                        </p>
+                      )}
+                      <p className={isSingleJenjang ? "font-semibold text-slate-900 dark:text-white text-sm" : "text-xs text-slate-500"}>
                         {t.tingkat ? `Berlaku khusus Tingkat ${t.tingkat.tingkat}` : 'Berlaku untuk semua tingkat'}
                       </p>
                     </td>
@@ -369,20 +395,34 @@ export default function MasterTarifSppPage() {
 
             <form onSubmit={handleSave} className="mt-4 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Jenjang Pendidikan *
-                </label>
-                <SearchableSelect
-                  value={formData.jenjangId}
-                  onChange={(val) => setFormData({ ...formData, jenjangId: val, tingkatId: '' })}
-                  options={masterJenjang.map((j) => ({
-                    value: String(j.id),
-                    label: `${j.kode} (${j.nama})`,
-                  }))}
-                  placeholder="-- Pilih Jenjang --"
-                  searchPlaceholder="Cari jenjang..."
-                  required
-                />
+                {isSingleJenjang ? (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Jenjang Pendidikan
+                    </label>
+                    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                      <GraduationCap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <span>{jenjangUtama ? `${jenjangUtama.kode} (${jenjangUtama.nama})` : 'Terkunci'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Jenjang Pendidikan *
+                    </label>
+                    <SearchableSelect
+                      value={formData.jenjangId}
+                      onChange={(val) => setFormData({ ...formData, jenjangId: val, tingkatId: '' })}
+                      options={masterJenjang.map((j) => ({
+                        value: String(j.id),
+                        label: `${j.kode} (${j.nama})`,
+                      }))}
+                      placeholder="-- Pilih Jenjang --"
+                      searchPlaceholder="Cari jenjang..."
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -406,20 +446,21 @@ export default function MasterTarifSppPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Tahun Ajaran *
                   </label>
-                  <input
-                    type="text"
+                  <SearchableSelect
                     value={formData.tahunAjaran}
-                    onChange={(e) => setFormData({ ...formData, tahunAjaran: e.target.value })}
+                    onChange={(val) => setFormData({ ...formData, tahunAjaran: val })}
+                    options={tahunList.map((t) => ({ value: t, label: t }))}
+                    placeholder="Pilih Tahun Ajaran..."
+                    searchPlaceholder="Cari tahun ajaran..."
                     required
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Nama Pos Tarif
                   </label>
                   <input
@@ -427,7 +468,7 @@ export default function MasterTarifSppPage() {
                     value={formData.namaTarif}
                     onChange={(e) => setFormData({ ...formData, namaTarif: e.target.value })}
                     required
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
                 </div>
               </div>

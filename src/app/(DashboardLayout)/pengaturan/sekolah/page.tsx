@@ -15,6 +15,11 @@ import {
   Mail,
   Phone,
   Sparkles,
+  School,
+  Layers,
+  GraduationCap,
+  Info,
+  Check,
 } from 'lucide-react'
 
 const THEME_PRESETS = [
@@ -74,10 +79,15 @@ export default function PengaturanSekolahPage() {
 
   const [activeTab, setActiveTab] = useState<'identitas' | 'visi_misi' | 'tema'>('identitas')
 
+  const [daftarJenjang, setDaftarJenjang] = useState<any[]>([])
+  const [activeJenjangIds, setActiveJenjangIds] = useState<number[]>([])
+
   const [formData, setFormData] = useState({
     namaSekolah: 'Sistem Informasi Manajemen Sekolah Terpadu',
     npsn: '10203040',
     bentukPendidikan: 'Multi-Jenjang',
+    modeJenjang: 'MULTI',
+    jenjangUtamaId: '',
     sejarah: '',
     visiMisi: '',
     alamat: '',
@@ -102,10 +112,18 @@ export default function PengaturanSekolahPage() {
         const res = await fetch('/api/pengaturan/sekolah')
         const data = await res.json()
         if (data.success && data.data) {
+          const profile = data.data
           setFormData((prev) => ({
             ...prev,
-            ...data.data,
+            ...profile,
+            modeJenjang: profile.modeJenjang || 'MULTI',
+            jenjangUtamaId: profile.jenjangUtamaId ? String(profile.jenjangUtamaId) : (profile.daftarJenjang?.[0]?.id ? String(profile.daftarJenjang[0].id) : ''),
           }))
+          if (Array.isArray(profile.daftarJenjang)) {
+            setDaftarJenjang(profile.daftarJenjang)
+            const activeIds = profile.daftarJenjang.filter((j: any) => j.active).map((j: any) => j.id)
+            setActiveJenjangIds(activeIds)
+          }
         }
       } catch (err) {
         console.error('Fetch profil error:', err)
@@ -175,16 +193,24 @@ export default function PengaturanSekolahPage() {
     setStatusMessage(null)
 
     try {
+      const payload = {
+        ...formData,
+        jenjangUtamaId: formData.jenjangUtamaId ? parseInt(formData.jenjangUtamaId, 10) : null,
+        activeJenjangIds,
+      }
+
       const res = await fetch('/api/pengaturan/sekolah', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
       const resJson = await res.json()
 
       if (resJson.success) {
-        setStatusMessage({ type: 'success', text: 'Pengaturan sekolah & tema berhasil disimpan!' })
+        setStatusMessage({ type: 'success', text: 'Pengaturan sekolah & konfigurasi mode satuan pendidikan berhasil disimpan!' })
         if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('sekolah-updated'))
+          window.dispatchEvent(new CustomEvent('menu-updated'))
           window.dispatchEvent(
             new CustomEvent('school-theme-updated', {
               detail: {
@@ -365,13 +391,186 @@ export default function PengaturanSekolahPage() {
                   />
                 </div>
 
+                {/* Card Mode Arsitektur Satuan Pendidikan */}
+                <div className="sm:col-span-2 rounded-2xl border-2 border-blue-100 bg-gradient-to-br from-blue-50/60 via-indigo-50/30 to-white p-5 dark:border-blue-900/40 dark:from-slate-800/80 dark:to-slate-900/60 space-y-4 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <GraduationCap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        Arsitektur Mode Satuan Pendidikan
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Tentukan apakah sistem digunakan khusus untuk 1 unit sekolah mandiri, atau yayasan multi-jenjang terpadu.
+                      </p>
+                    </div>
+                    <div>
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full ${
+                        formData.modeJenjang === 'SINGLE'
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                          : 'bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
+                      }`}>
+                        <span className={`h-2 w-2 rounded-full ${formData.modeJenjang === 'SINGLE' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+                        {formData.modeJenjang === 'SINGLE' ? 'Mode Single-Jenjang' : 'Mode Multi-Jenjang'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Radio Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {/* Option 1: Single Jenjang */}
+                    <div
+                      onClick={() => setFormData({ ...formData, modeJenjang: 'SINGLE' })}
+                      className={`cursor-pointer rounded-xl border p-4 transition-all ${
+                        formData.modeJenjang === 'SINGLE'
+                          ? 'border-blue-600 bg-white ring-2 ring-blue-500/20 shadow-md dark:border-blue-500 dark:bg-slate-900'
+                          : 'border-slate-200 bg-white/70 hover:bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800/60'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`rounded-xl p-2.5 ${
+                          formData.modeJenjang === 'SINGLE'
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                        }`}>
+                          <School className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                              Satuan Tunggal (Single-Jenjang)
+                            </h4>
+                            {formData.modeJenjang === 'SINGLE' && (
+                              <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            Khusus untuk 1 unit sekolah mandiri (misal: hanya SMK). Pilihan jenjang di menu Siswa, Kelas, & Tarif SPP disembunyikan & dikunci otomatis.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Option 2: Multi Jenjang */}
+                    <div
+                      onClick={() => setFormData({ ...formData, modeJenjang: 'MULTI' })}
+                      className={`cursor-pointer rounded-xl border p-4 transition-all ${
+                        formData.modeJenjang === 'MULTI'
+                          ? 'border-blue-600 bg-white ring-2 ring-blue-500/20 shadow-md dark:border-blue-500 dark:bg-slate-900'
+                          : 'border-slate-200 bg-white/70 hover:bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800/60'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`rounded-xl p-2.5 ${
+                          formData.modeJenjang === 'MULTI'
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                        }`}>
+                          <Layers className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                              Yayasan Terpadu (Multi-Jenjang)
+                            </h4>
+                            {formData.modeJenjang === 'MULTI' && (
+                              <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            Menaungi beberapa jenjang di bawah yayasan yang sama (misal: SD, SMP, SMA, SMK). Filter jenjang tetap aktif di semua menu.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sub-form Single Jenjang */}
+                  {formData.modeJenjang === 'SINGLE' && (
+                    <div className="rounded-xl bg-white p-4 border border-blue-200 dark:bg-slate-900 dark:border-slate-700 space-y-3 shadow-xs">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                          Jenjang Utama Lembaga Sekolah *
+                        </label>
+                        <select
+                          value={formData.jenjangUtamaId}
+                          onChange={(e) => setFormData({ ...formData, jenjangUtamaId: e.target.value })}
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                          required
+                        >
+                          <option value="">-- Pilih Jenjang Sekolah --</option>
+                          {daftarJenjang.map((j) => (
+                            <option key={j.id} value={j.id}>
+                              {j.kode} - {j.nama}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 rounded-lg bg-blue-50 p-3 text-xs text-blue-900 border border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/50">
+                        <Info className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+                        <div>
+                          <span className="font-bold">Otomatisasi Antarmuka Sistem Aktif:</span>
+                          <p className="mt-0.5 text-[11px] leading-relaxed text-blue-800 dark:text-blue-300">
+                            Ketika disimpan dalam mode Single-Jenjang, seluruh form input dan filter di menu Siswa, Kelas, dan Penetapan Tarif SPP tidak lagi menampilkan dropdown jenjang karena sistem telah terkunci dan otomatis mengisi jenjang tersebut di latar belakang.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sub-form Multi Jenjang */}
+                  {formData.modeJenjang === 'MULTI' && (
+                    <div className="rounded-xl bg-white p-4 border border-blue-200 dark:bg-slate-900 dark:border-slate-700 space-y-3 shadow-xs">
+                      <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                        Pilih Unit Jenjang yang Aktif Beroperasi di Yayasan
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                        {daftarJenjang.map((j) => {
+                          const isChecked = activeJenjangIds.includes(j.id)
+                          return (
+                            <label
+                              key={j.id}
+                              className={`flex items-center gap-2.5 rounded-lg border p-3 cursor-pointer text-xs font-semibold transition ${
+                                isChecked
+                                  ? 'border-blue-500 bg-blue-50 text-blue-900 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-700 ring-1 ring-blue-500/30'
+                                  : 'border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setActiveJenjangIds([...activeJenjangIds, j.id])
+                                  } else {
+                                    if (activeJenjangIds.length <= 1) {
+                                      alert('Minimal harus ada 1 unit jenjang yang aktif!')
+                                      return
+                                    }
+                                    setActiveJenjangIds(activeJenjangIds.filter((id) => id !== j.id))
+                                  }
+                                }}
+                                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span>{j.kode} ({j.nama.split(' ')[0]})</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Unit jenjang yang tidak dicentang akan dinonaktifkan dari pilihan kelas, pendaftaran PPDB, dan laporan akademik.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Bentuk Layanan Pendidikan
+                    Label Bentuk Layanan Lembaga
                   </label>
                   <input
                     type="text"
-                    placeholder="Yayasan Terpadu / Multi-Jenjang"
+                    placeholder="Contoh: Sekolah Menengah Kejuruan Mandiri / Yayasan Terpadu"
                     value={formData.bentukPendidikan || ''}
                     onChange={(e) => setFormData({ ...formData, bentukPendidikan: e.target.value })}
                     className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"

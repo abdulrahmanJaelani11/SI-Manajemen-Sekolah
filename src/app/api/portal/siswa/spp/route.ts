@@ -2,21 +2,7 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
 import { verifyToken, JwtPayloadSiswa } from '@/lib/auth/jwt'
-
-const BULAN_AKADEMIK = [
-  { urutan: 1, nama: 'Juli' },
-  { urutan: 2, nama: 'Agustus' },
-  { urutan: 3, nama: 'September' },
-  { urutan: 4, nama: 'Oktober' },
-  { urutan: 5, nama: 'November' },
-  { urutan: 6, nama: 'Desember' },
-  { urutan: 7, nama: 'Januari' },
-  { urutan: 8, nama: 'Februari' },
-  { urutan: 9, nama: 'Maret' },
-  { urutan: 10, nama: 'April' },
-  { urutan: 11, nama: 'Mei' },
-  { urutan: 12, nama: 'Juni' },
-]
+import { BULAN_AKADEMIK, getMaxDueUrutanBulan } from '@/lib/terbilang'
 
 export async function GET(request: NextRequest) {
   try {
@@ -102,14 +88,19 @@ export async function GET(request: NextRequest) {
       pembayaranMap.set(p.urutanBulan, p)
     }
 
-    // Bangun data status 12 bulan
+    const maxDueUrutan = getMaxDueUrutanBulan(tahunAjaran)
+
+    // Bangun data status 12 bulan relatif bulan berjalan
     let totalTerbayar = 0
     let totalTunggakan = 0
     let bulanLunasCount = 0
     let bulanNunggakCount = 0
+    let bulanMendatangCount = 0
+    let totalMendatang = 0
 
     const bulanStatus = BULAN_AKADEMIK.map((b) => {
       const bayar = pembayaranMap.get(b.urutan)
+      const isDue = b.urutan <= maxDueUrutan
 
       if (bayar) {
         const nominal = parseFloat(bayar.nominalBayar.toString())
@@ -120,6 +111,7 @@ export async function GET(request: NextRequest) {
           urutan: b.urutan,
           bulan: b.nama,
           status: 'lunas',
+          isDue,
           nominalTarif: parseFloat(bayar.nominalTagihan.toString()) || nominalTarif,
           diskon: parseFloat(bayar.diskon.toString()) || 0,
           nominalBayar: nominal,
@@ -129,13 +121,19 @@ export async function GET(request: NextRequest) {
           petugas: bayar.petugas,
         }
       } else {
-        totalTunggakan += nominalTarif
-        bulanNunggakCount++
+        if (isDue) {
+          totalTunggakan += nominalTarif
+          bulanNunggakCount++
+        } else {
+          totalMendatang += nominalTarif
+          bulanMendatangCount++
+        }
 
         return {
           urutan: b.urutan,
           bulan: b.nama,
-          status: 'belum_bayar',
+          status: isDue ? 'belum_bayar' : 'mendatang',
+          isDue,
           nominalTarif: nominalTarif,
           diskon: 0,
           nominalBayar: 0,
@@ -194,6 +192,10 @@ export async function GET(request: NextRequest) {
           totalTunggakan,
           bulanLunasCount,
           bulanNunggakCount,
+          bulanMendatangCount,
+          totalMendatang,
+          totalSisaSetahun: totalTunggakan + totalMendatang,
+          maxDueUrutan,
         },
         bulanStatus,
         riwayatTransaksi,

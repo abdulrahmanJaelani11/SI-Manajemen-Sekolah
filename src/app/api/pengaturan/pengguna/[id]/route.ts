@@ -17,7 +17,7 @@ export async function PUT(
     if (isNaN(userId)) return apiError('ID tidak valid', 400)
 
     const body = await request.json()
-    const { username, password, namaLengkap, email, roleId, active } = body
+    const { username, password, namaLengkap, email, roleId, pegawaiId, jenjangId, active } = body
 
     const existing = await prisma.secUser.findUnique({ where: { id: userId } })
     if (!existing) return apiError('Pengguna tidak ditemukan', 404)
@@ -30,11 +30,27 @@ export async function PUT(
       if (duplicate) return apiError('Username sudah digunakan pengguna lain', 409)
     }
 
+    // Cek pegawaiId jika diubah
+    if (pegawaiId !== undefined && pegawaiId) {
+      const parsedPegawaiId = parseInt(pegawaiId, 10)
+      const duplicatePegawai = await prisma.secUser.findFirst({
+        where: {
+          pegawaiId: parsedPegawaiId,
+          id: { not: userId },
+        },
+      })
+      if (duplicatePegawai) {
+        return apiError('Profil Pegawai ini sudah ditautkan ke akun lain', 409)
+      }
+    }
+
     const updateData: any = {
       ...(username ? { username: username.trim().toLowerCase() } : {}),
       ...(namaLengkap ? { namaLengkap: String(namaLengkap).trim() } : {}),
       email: email !== undefined ? (email ? String(email).trim() : null) : undefined,
       ...(roleId ? { roleId: parseInt(roleId, 10) } : {}),
+      pegawaiId: pegawaiId !== undefined ? (pegawaiId ? parseInt(pegawaiId, 10) : null) : undefined,
+      jenjangId: jenjangId !== undefined ? (jenjangId ? parseInt(jenjangId, 10) : null) : undefined,
       ...(active !== undefined ? { active: Boolean(active) } : {}),
     }
 
@@ -49,7 +65,11 @@ export async function PUT(
     const updated = await prisma.secUser.update({
       where: { id: userId },
       data: updateData,
-      include: { role: true },
+      include: {
+        role: true,
+        pegawai: true,
+        jenjang: true,
+      },
     })
 
     return apiSuccess({
@@ -60,6 +80,8 @@ export async function PUT(
         namaLengkap: updated.namaLengkap,
         email: updated.email,
         role: updated.role,
+        pegawai: updated.pegawai,
+        jenjang: updated.jenjang,
         active: updated.active,
       },
     })

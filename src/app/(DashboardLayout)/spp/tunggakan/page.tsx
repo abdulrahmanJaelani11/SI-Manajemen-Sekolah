@@ -123,7 +123,7 @@ export default function TunggakanSppPage() {
             Rekapitulasi Tunggakan SPP
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Monitoring piutang dan rekapitulasi siswa yang belum melunasi kewajiban iuran SPP.
+            Monitoring piutang dan rekapitulasi siswa yang belum melunasi kewajiban iuran SPP jatuh tempo s.d. bulan berjalan.
           </p>
         </div>
         <button
@@ -148,7 +148,7 @@ export default function TunggakanSppPage() {
           <p className="mt-2 text-3xl font-extrabold text-rose-600 dark:text-rose-400">
             {summary.totalSiswaNunggak} Siswa
           </p>
-          <p className="text-xs text-slate-500">Memiliki tagihan aktif</p>
+          <p className="text-xs text-slate-500">Jatuh tempo s.d. bulan berjalan</p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -161,7 +161,7 @@ export default function TunggakanSppPage() {
           <p className="mt-2 text-3xl font-extrabold text-amber-600 dark:text-amber-400">
             {summary.totalBulanNunggak} Bulan
           </p>
-          <p className="text-xs text-slate-500">Total bulan belum tertagih</p>
+          <p className="text-xs text-slate-500">Bulan jatuh tempo belum lunas</p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -174,7 +174,7 @@ export default function TunggakanSppPage() {
           <p className="mt-2 text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">
             {formatRupiah(summary.totalEstimasiPiutang)}
           </p>
-          <p className="text-xs text-slate-500">Potensi penerimaan kas masuk</p>
+          <p className="text-xs text-slate-500">Piutang jatuh tempo s.d. saat ini</p>
         </div>
       </div>
 

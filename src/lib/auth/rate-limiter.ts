@@ -72,3 +72,7 @@ export function resetRateLimit(key: string) {
   rateLimitStore.delete(key)
 }
 
+export function resetAllRateLimits() {
+  rateLimitStore.clear()
+}
+

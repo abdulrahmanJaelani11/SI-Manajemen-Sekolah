@@ -29,17 +29,21 @@ model SecRole {
 }
 
 model SecUser {
-  id          Int       @id @default(autoincrement())
-  username    String    @unique
+  id          Int          @id @default(autoincrement())
+  username    String       @unique
   password    String
-  namaLengkap String    @map("nama_lengkap")
+  namaLengkap String       @map("nama_lengkap")
   email       String?
-  roleId      Int       @map("role_id")
-  active      Boolean   @default(true)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  roleId      Int          @map("role_id")
+  pegawaiId   Int?         @unique @map("pegawai_id")
+  jenjangId   Int?         @map("jenjang_id")
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
 
-  role        SecRole   @relation(fields: [roleId], references: [id])
+  role        SecRole      @relation(fields: [roleId], references: [id])
+  pegawai     Pegawai?     @relation(fields: [pegawaiId], references: [id], onDelete: SetNull)
+  jenjang     RefJenjang?  @relation(fields: [jenjangId], references: [id], onDelete: SetNull)
 
   @@map("sec_user")
 }
@@ -82,6 +86,8 @@ model SekolahProfil {
   namaSekolah      String   @default("Sistem Manajemen Sekolah") @map("nama_sekolah")
   npsn             String?
   bentukPendidikan String?  @default("Multi-Jenjang") @map("bentuk_pendidikan")
+  modeJenjang      String   @default("MULTI") @map("mode_jenjang") // "SINGLE" | "MULTI"
+  jenjangUtamaId   Int?     @map("jenjang_utama_id")
   sejarah          String?  @db.Text
   visiMisi         String?  @map("visi_misi") @db.Text
   alamat           String?  @db.Text
@@ -101,6 +107,8 @@ model SekolahProfil {
 
   updatedAt        DateTime @updatedAt @map("updated_at")
 
+  jenjangUtama     RefJenjang? @relation("JenjangUtamaSekolah", fields: [jenjangUtamaId], references: [id], onDelete: SetNull)
+
   @@map("sekolah_profil")
 }
 
@@ -119,10 +127,12 @@ model RefJenjang {
   jurusan        Jurusan[]
   kelas          Kelas[]
   siswa          Siswa[]
+  users          SecUser[]
   sppTarif       SppTarif[]
   mataPelajaran  MataPelajaran[]
   jamPelajaran   JamPelajaran[]
   ppdbPendaftar  PpdbPendaftar[]
+  sekolahProfil  SekolahProfil[] @relation("JenjangUtamaSekolah")
 
   @@map("ref_jenjang")
 }
@@ -294,6 +304,7 @@ model Pegawai {
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
 
+  user              SecUser?
   mengajarMapel     GuruMapelKelas[]
   jadwalMengajar    JadwalPelajaran[]
   nilaiDiberikan    NilaiSiswa[]

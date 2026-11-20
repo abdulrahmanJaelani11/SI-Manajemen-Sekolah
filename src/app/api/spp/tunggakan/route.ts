@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
-import { BULAN_AKADEMIK } from '@/lib/terbilang'
+import { BULAN_AKADEMIK, getMaxDueUrutanBulan } from '@/lib/terbilang'
 import { requirePermission } from '@/lib/auth/api-guard'
 
 export async function GET(request: NextRequest) {
@@ -84,10 +84,11 @@ export async function GET(request: NextRequest) {
       where: { tahunAjaran, active: true },
     })
 
-    // Hitung tunggakan tiap siswa
+    // Hitung tunggakan tiap siswa relatif terhadap bulan berjalan
     const tunggakanList: any[] = []
     let grandTotalPiutang = 0
     let grandTotalBulanNunggak = 0
+    const maxDueUrutan = getMaxDueUrutanBulan(tahunAjaran)
 
     for (const s of siswaList) {
       const studentPaidSet = paidMap.get(s.id) || new Set()
@@ -103,13 +104,16 @@ export async function GET(request: NextRequest) {
         tarifNominal = Number(matchedTarif.nominal)
       }
 
-      // Cari bulan-bulan yang belum dibayar
-      const unpaidMonths = BULAN_AKADEMIK.filter((m) => !studentPaidSet.has(m.urutan))
+      // Cari bulan-bulan yang belum dibayar tapi SUDAH JATUH TEMPO
+      const unpaidDueMonths = BULAN_AKADEMIK.filter(
+        (m) => m.urutan <= maxDueUrutan && !studentPaidSet.has(m.urutan)
+      )
+      const allUnpaidMonths = BULAN_AKADEMIK.filter((m) => !studentPaidSet.has(m.urutan))
 
-      if (unpaidMonths.length > 0) {
-        const nominalTunggakan = unpaidMonths.length * tarifNominal
+      if (unpaidDueMonths.length > 0) {
+        const nominalTunggakan = unpaidDueMonths.length * tarifNominal
         grandTotalPiutang += nominalTunggakan
-        grandTotalBulanNunggak += unpaidMonths.length
+        grandTotalBulanNunggak += unpaidDueMonths.length
 
         tunggakanList.push({
           siswaId: s.id,
@@ -121,9 +125,11 @@ export async function GET(request: NextRequest) {
           namaWali: s.namaWali,
           telpWali: s.telpWali,
           tarifNominal,
-          jumlahBulanNunggak: unpaidMonths.length,
-          bulanNunggakList: unpaidMonths.map((m) => m.nama),
+          jumlahBulanNunggak: unpaidDueMonths.length,
+          bulanNunggakList: unpaidDueMonths.map((m) => m.nama),
           totalTunggakanNominal: nominalTunggakan,
+          totalSisaKewajibanSetahun: allUnpaidMonths.length * tarifNominal,
+          jumlahBulanMendatang: allUnpaidMonths.length - unpaidDueMonths.length,
         })
       }
     }
@@ -139,6 +145,8 @@ export async function GET(request: NextRequest) {
           totalSiswaNunggak: tunggakanList.length,
           totalBulanNunggak: grandTotalBulanNunggak,
           totalEstimasiPiutang: grandTotalPiutang,
+          maxDueUrutan,
+          tahunAjaran,
         },
       },
     })

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
-import { BULAN_AKADEMIK } from '@/lib/terbilang'
+import { BULAN_AKADEMIK, getMaxDueUrutanBulan } from '@/lib/terbilang'
 import { requireAuth } from '@/lib/auth/api-guard'
 
 export async function GET(
@@ -92,14 +92,19 @@ export async function GET(
       paymentMap.set(p.urutanBulan, p)
     }
 
-    // Susun grid 12 bulan (Juli s.d. Juni)
+    const maxDueUrutan = getMaxDueUrutanBulan(tahunAjaran)
+
+    // Susun grid 12 bulan (Juli s.d. Juni) dengan status relatif bulan berjalan
     const monthsStatus = BULAN_AKADEMIK.map((item) => {
       const paid = paymentMap.get(item.urutan)
+      const isDue = item.urutan <= maxDueUrutan
+
       if (paid) {
         return {
           urutan: item.urutan,
           bulan: item.nama,
           status: 'paid',
+          isDue,
           noTransaksi: paid.noTransaksi,
           nominalTagihan: Number(paid.nominalTagihan),
           diskon: Number(paid.diskon),
@@ -113,7 +118,8 @@ export async function GET(
       return {
         urutan: item.urutan,
         bulan: item.nama,
-        status: 'unpaid',
+        status: isDue ? 'unpaid' : 'upcoming', // 'unpaid' = jatuh tempo, 'upcoming' = belum jatuh tempo
+        isDue,
         noTransaksi: null,
         nominalTagihan: tarifNominal,
         diskon: 0,
@@ -125,8 +131,19 @@ export async function GET(
     })
 
     const totalTerbayar = monthsStatus.filter((m) => m.status === 'paid').length
-    const totalTunggakanBulan = 12 - totalTerbayar
-    const totalEstimasiTunggakan = totalTunggakanBulan * tarifNominal
+    const unpaidDueMonths = monthsStatus.filter((m) => m.status === 'unpaid')
+    const upcomingMonths = monthsStatus.filter((m) => m.status === 'upcoming')
+
+    // Tunggakan riil yang sudah jatuh tempo s.d. bulan berjalan
+    const totalBulanTunggakan = unpaidDueMonths.length
+    const totalEstimasiTunggakan = totalBulanTunggakan * tarifNominal
+
+    // Tagihan yang belum jatuh tempo (bulan mendatang)
+    const totalBulanMendatang = upcomingMonths.length
+    const totalEstimasiMendatang = totalBulanMendatang * tarifNominal
+
+    // Sisa kewajiban setahun penuh
+    const totalSisaKewajibanSetahun = (12 - totalTerbayar) * tarifNominal
     const totalNominalTerbayar = payments.reduce((acc, p) => acc + Number(p.nominalBayar), 0)
 
     // Riwayat transaksi per kuitansi
@@ -194,9 +211,14 @@ export async function GET(
         listTahunAjaran,
         summary: {
           totalBulanTerbayar: totalTerbayar,
-          totalBulanTunggakan: totalTunggakanBulan,
+          totalBulanTunggakan: totalBulanTunggakan,
           totalNominalTerbayar,
-          totalEstimasiTunggakan,
+          totalEstimasiTunggakan: totalEstimasiTunggakan,
+          totalBulanMendatang: totalBulanMendatang,
+          totalEstimasiMendatang: totalEstimasiMendatang,
+          totalSisaKewajibanSetahun: totalSisaKewajibanSetahun,
+          maxDueUrutan: maxDueUrutan,
+          isCurrentAcademicYear: maxDueUrutan > 0 && maxDueUrutan < 12,
         },
       },
     })

@@ -9,6 +9,7 @@ import { Icon } from '@iconify/react'
 import FullLogo from '../shared/logo/FullLogo'
 import { Button } from '@/components/ui/button'
 import { usePermission } from '@/context/PermissionContext'
+import { useInstitution } from '@/context/InstitutionContext'
 import {
   AMMenu,
   AMMenuItem,
@@ -105,7 +106,9 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
   const pathname = usePathname()
   const { theme } = useTheme()
   const { canView, user } = usePermission()
+  const { hasJurusan } = useInstitution()
   const [activePeriodLabel, setActivePeriodLabel] = useState('2024/2025')
+  const [menuSections, setMenuSections] = useState<any[]>(SidebarContent)
 
   useEffect(() => {
     const fetchActivePeriod = async () => {
@@ -125,20 +128,43 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
     return () => window.removeEventListener('tahun-ajaran-updated', fetchActivePeriod)
   }, [])
 
+  // Sinkronisasi navigasi menu dinamis dari database
+  useEffect(() => {
+    const fetchDynamicMenus = async () => {
+      try {
+        const res = await fetch('/api/menus/sidebar')
+        const json = await res.json()
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setMenuSections(json.data)
+        }
+      } catch (err) {
+        // Gunakan fallback SidebarContent jika fetch gagal
+        console.error('Sidebar dynamic menu fetch error:', err)
+      }
+    }
+
+    fetchDynamicMenus()
+    window.addEventListener('menu-updated', fetchDynamicMenus)
+    return () => window.removeEventListener('menu-updated', fetchDynamicMenus)
+  }, [])
+
   // Only allow "light" or "dark" for AMSidebar
   const sidebarMode = theme === 'light' || theme === 'dark' ? theme : undefined
 
-  // Filter menu items berdasarkan izin peran RBAC
-  const filteredSections = SidebarContent.map((section) => {
-    const visibleChildren = (section.children || []).filter((child) => {
-      if (!child.url) return true
-      return canView(child.url)
+  // Filter menu items berdasarkan izin peran RBAC dan ketersediaan kejuruan (hasJurusan)
+  const filteredSections = menuSections
+    .map((section) => {
+      const visibleChildren = (section.children || []).filter((child: any) => {
+        if (!child.url) return true
+        if (child.url === '/jurusan' && !hasJurusan) return false
+        return canView(child.url)
+      })
+      return {
+        ...section,
+        children: visibleChildren,
+      }
     })
-    return {
-      ...section,
-      children: visibleChildren,
-    }
-  }).filter((section) => section.children && section.children.length > 0)
+    .filter((section) => section.children && section.children.length > 0)
 
   return (
     <AMSidebar

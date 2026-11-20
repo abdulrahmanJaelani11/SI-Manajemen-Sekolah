@@ -1,9 +1,30 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
+import { requirePermission } from '@/lib/auth/api-guard'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const jenjangId = searchParams.get('jenjangId')
+    const kelasId = searchParams.get('kelasId')
+    const scope = searchParams.get('scope')
+
+    const baseWhere: any = {}
+    if (kelasId) baseWhere.kelasId = parseInt(kelasId, 10)
+    else if (jenjangId) baseWhere.jenjangId = parseInt(jenjangId, 10)
+
+    if (scope === 'my_students') {
+      const auth = await requirePermission(request, '/siswa', 'view')
+      if (!auth.errorResponse && auth.user?.guruScope?.isGuru) {
+        if (auth.user.guruScope.kelasIds.length > 0) {
+          baseWhere.kelasId = { in: auth.user.guruScope.kelasIds }
+        } else if (auth.user.guruScope.jenjangIds.length > 0) {
+          baseWhere.jenjangId = { in: auth.user.guruScope.jenjangIds }
+        }
+      }
+    }
+
     const [
       totalSiswa,
       aktifTotal,
@@ -13,12 +34,12 @@ export async function GET() {
       perempuanTotal,
       jenjangStats,
     ] = await Promise.all([
-      prisma.siswa.count(),
-      prisma.siswa.count({ where: { status: 'aktif' } }),
-      prisma.siswa.count({ where: { status: 'alumni' } }),
-      prisma.siswa.count({ where: { status: 'mutasi' } }),
-      prisma.siswa.count({ where: { jenisKelamin: 'L', status: 'aktif' } }),
-      prisma.siswa.count({ where: { jenisKelamin: 'P', status: 'aktif' } }),
+      prisma.siswa.count({ where: baseWhere }),
+      prisma.siswa.count({ where: { ...baseWhere, status: 'aktif' } }),
+      prisma.siswa.count({ where: { ...baseWhere, status: 'alumni' } }),
+      prisma.siswa.count({ where: { ...baseWhere, status: 'mutasi' } }),
+      prisma.siswa.count({ where: { ...baseWhere, jenisKelamin: 'L', status: 'aktif' } }),
+      prisma.siswa.count({ where: { ...baseWhere, jenisKelamin: 'P', status: 'aktif' } }),
       prisma.refJenjang.findMany({
         where: { active: true },
         select: {
@@ -28,7 +49,7 @@ export async function GET() {
           _count: {
             select: {
               siswa: {
-                where: { status: 'aktif' },
+                where: { ...baseWhere, status: 'aktif' },
               },
             },
           },

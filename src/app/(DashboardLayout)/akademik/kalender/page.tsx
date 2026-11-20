@@ -885,8 +885,8 @@ export default function KalenderAkademikPage() {
                 </div>
               </div>
 
-              {/* Sasaran & Semester dengan SearchableSelect */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Sasaran, Tahun Ajaran & Semester dengan SearchableSelect */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Sasaran Peserta <span className="text-rose-500">*</span>
@@ -902,6 +902,20 @@ export default function KalenderAkademikPage() {
                     onChange={(val) => setForm({ ...form, sasaran: val || 'semua' })}
                     placeholder="Pilih Sasaran..."
                     searchPlaceholder="Cari sasaran peserta..."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Tahun Ajaran <span className="text-rose-500">*</span>
+                  </label>
+                  <SearchableSelect
+                    options={tahunAjaranList.map((t) => ({ value: t, label: t }))}
+                    value={form.tahunAjaran}
+                    onChange={(val) => setForm({ ...form, tahunAjaran: val || tahunAjaranList[0] || '2024/2025' })}
+                    placeholder="Pilih Tahun Ajaran..."
+                    searchPlaceholder="Cari TA..."
                     required
                   />
                 </div>

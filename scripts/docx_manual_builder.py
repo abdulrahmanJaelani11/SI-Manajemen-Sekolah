@@ -91,7 +91,7 @@ def add_field_code(run, field_text):
     run._r.append(fldChar2)
     run._r.append(fldChar3)
 
-def create_base_document(book_series_title, book_subtitle, doc_id, target_roles, version="1.0"):
+def create_base_document(book_series_title, book_subtitle, doc_id, target_roles, version="1.0", doc_category="Manual Book"):
     """
     Initialize document using the official User's Canva Cover Template.
     - Menghilangkan teks judul duplikat "Sistem Manajemen Sekolah Terpadu" pada body cover karena sudah tertera pada gambar banner.
@@ -130,11 +130,11 @@ def create_base_document(book_series_title, book_subtitle, doc_id, target_roles,
             p_elem.getparent().remove(p_elem)
             break
 
-    # 2. Perbarui subjudul "Manual Book" dengan nama seri buku panduan
+    # 2. Perbarui subjudul "Manual Book" / "Dokumen Teknis" dengan nama seri buku
     for p in doc.paragraphs:
         if "Manual Book" in p.text:
             p.text = ""
-            r_mb = p.add_run("Manual Book\n")
+            r_mb = p.add_run(f"{doc_category}\n")
             r_mb.font.name = "Canva Sans Bold"
             r_mb.font.size = Pt(22)
             r_mb.font.bold = True
@@ -564,3 +564,30 @@ def add_menu_path(doc, path_string):
     r_path.font.size = Pt(9.5)
     r_path.font.bold = True
     r_path.font.color.rgb = COLOR_SLATE_DARK
+
+def add_code_block(doc, code_string):
+    """Add a formatted monospaced code or JSON schema block with light gray background and border"""
+    tbl = doc.add_table(rows=1, cols=1)
+    tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    tbl.autofit = False
+    
+    cell = tbl.cell(0, 0)
+    cell.width = Inches(6.1)
+    set_cell_shading(cell, "F8FAFC")
+    set_cell_margins(cell, top=100, bottom=100, left=140, right=140)
+    set_cell_borders(cell, top="single", bottom="single", left="single", right="single", border_color="E2E8F0")
+    
+    p = cell.paragraphs[0]
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(0)
+    p.paragraph_format.line_spacing = 1.05
+    
+    run = p.add_run(code_string)
+    run.font.name = "Consolas"
+    run.font.size = Pt(8.5)
+    run.font.color.rgb = COLOR_SLATE_DARK
+    
+    # Spacing after code block
+    sp = doc.add_paragraph()
+    sp.paragraph_format.space_before = Pt(4)
+    sp.paragraph_format.space_after = Pt(4)

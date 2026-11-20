@@ -36,6 +36,7 @@ export default function MataPelajaranPage() {
   const [guruList, setGuruList] = useState<any[]>([])
   const [pengampuList, setPengampuList] = useState<any[]>([])
   const [activePeriod, setActivePeriod] = useState<any>(null)
+  const [tahunList, setTahunList] = useState<string[]>([])
 
   // Filter Katalog
   const [searchQuery, setSearchQuery] = useState('')
@@ -82,8 +83,12 @@ export default function MataPelajaranPage() {
       if (filterKelompok) params.set('kelompok', filterKelompok)
       if (filterJenjang) params.set('jenjangId', filterJenjang)
 
-      const res = await fetch(`/api/akademik/mapel?${params.toString()}`)
+      const [res, resTa] = await Promise.all([
+        fetch(`/api/akademik/mapel?${params.toString()}`),
+        fetch('/api/akademik/tahun-ajaran/aktif'),
+      ])
       const json = await res.json()
+      const jsonTa = await resTa.json()
       if (json.success && json.data) {
         setMapelList(json.data.mapelList || [])
         setJenjangList(json.data.jenjangList || [])
@@ -95,6 +100,9 @@ export default function MataPelajaranPage() {
           setPengampuTa(json.data.activePeriod.nama)
           setPengampuSemester(json.data.activePeriod.semester)
         }
+      }
+      if (jsonTa.success && jsonTa.data) {
+        setTahunList(jsonTa.data.tahunList || [])
       }
     } catch (err) {
       console.error('Fetch mapel error:', err)
@@ -502,11 +510,11 @@ export default function MataPelajaranPage() {
               <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
                 Tahun Ajaran
               </label>
-              <input
-                type="text"
+              <SearchableSelect
                 value={pengampuTa}
-                onChange={(e) => setPengampuTa(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono font-bold focus:border-blue-500 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+                onChange={(val) => setPengampuTa(val)}
+                options={tahunList.map((y) => ({ value: y, label: `T.A ${y}` }))}
+                placeholder="Pilih Tahun Ajaran..."
               />
             </div>
 
@@ -831,12 +839,12 @@ export default function MataPelajaranPage() {
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Tahun Ajaran
                   </label>
-                  <input
-                    type="text"
-                    required
+                  <SearchableSelect
                     value={pengampuForm.tahunAjaran}
-                    onChange={(e) => setPengampuForm({ ...pengampuForm, tahunAjaran: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-mono focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+                    onChange={(val) => setPengampuForm({ ...pengampuForm, tahunAjaran: val })}
+                    options={tahunList.map((y) => ({ value: y, label: y }))}
+                    placeholder="Pilih TA..."
+                    required
                   />
                 </div>
                 <div>

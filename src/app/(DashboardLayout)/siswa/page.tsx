@@ -19,9 +19,14 @@ import {
   FileSpreadsheet,
   X,
   Camera,
+  CameraOff,
+  CreditCard,
+  Printer,
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import { useInstitution } from '@/context/InstitutionContext'
+import KartuPelajarMasalModal from '@/components/siswa/KartuPelajarMasalModal'
 
 interface Jenjang {
   id: number
@@ -84,10 +89,16 @@ interface StatsData {
 }
 
 export default function SiswaPage() {
-  const { canCreate, canEdit, canDelete } = usePermission()
+  const { user, canCreate, canEdit, canDelete } = usePermission()
+  const isGuru = Boolean(
+    user?.guruScope?.isGuru ||
+      user?.roleName?.toLowerCase().includes('guru') ||
+      user?.roleName?.toLowerCase().includes('wali')
+  )
   const allowCreate = canCreate('/siswa')
   const allowEdit = canEdit('/siswa')
   const allowDelete = canDelete('/siswa')
+  const { isSingleJenjang, defaultJenjangId, jenjangUtama } = useInstitution()
 
   const [siswaList, setSiswaList] = useState<Siswa[]>([])
   const [stats, setStats] = useState<StatsData | null>(null)
@@ -95,12 +106,44 @@ export default function SiswaPage() {
   const [allKelas, setAllKelas] = useState<KelasItem[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Seleksi Massal Siswa (Bulk Selection untuk Cetak Kartu Pelajar)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [isBulkCardModalOpen, setIsBulkCardModalOpen] = useState(false)
+  const [sekolahInfo, setSekolahInfo] = useState<any>(null)
+
+  // Scope State (Untuk Pendidik / Guru)
+  const [scopeMode, setScopeMode] = useState<'my_students' | 'all'>('my_students')
+  const [scopeInitialized, setScopeInitialized] = useState(false)
+
   // Filters
   const [search, setSearch] = useState('')
   const [selectedJenjang, setSelectedJenjang] = useState('')
   const [selectedKelas, setSelectedKelas] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('')
   const [selectedGender, setSelectedGender] = useState('')
+
+  // Inisialisasi scope berdasarkan profil user dan konfigurasi mode satuan pendidikan
+  useEffect(() => {
+    if (isSingleJenjang && defaultJenjangId) {
+      setSelectedJenjang(String(defaultJenjangId))
+    }
+  }, [isSingleJenjang, defaultJenjangId])
+
+  useEffect(() => {
+    if (user && !scopeInitialized) {
+      if (isGuru && (user.guruScope?.kelasIds?.length || user.guruScope?.jenjangIds?.length)) {
+        setScopeMode('my_students')
+      } else {
+        setScopeMode('all')
+        if (user.jenjangId) {
+          setSelectedJenjang(String(user.jenjangId))
+        } else if (isSingleJenjang && defaultJenjangId) {
+          setSelectedJenjang(String(defaultJenjangId))
+        }
+      }
+      setScopeInitialized(true)
+    }
+  }, [user, isGuru, scopeInitialized, isSingleJenjang, defaultJenjangId])
 
   // Modals
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -149,10 +192,16 @@ export default function SiswaPage() {
       if (selectedKelas) params.append('kelasId', selectedKelas)
       if (selectedStatus) params.append('status', selectedStatus)
       if (selectedGender) params.append('jenisKelamin', selectedGender)
+      if (isGuru) params.append('scope', scopeMode)
+
+      const statsParams = new URLSearchParams()
+      if (isGuru) statsParams.append('scope', scopeMode)
+      if (selectedJenjang) statsParams.append('jenjangId', selectedJenjang)
+      if (selectedKelas) statsParams.append('kelasId', selectedKelas)
 
       const [resSiswa, resStats] = await Promise.all([
         fetch(`/api/siswa?${params.toString()}`),
-        fetch('/api/siswa/stats'),
+        fetch(`/api/siswa/stats?${statsParams.toString()}`),
       ])
 
       const dataSiswa = await resSiswa.json()
@@ -169,15 +218,18 @@ export default function SiswaPage() {
 
   const fetchMaster = async () => {
     try {
-      const [resJenjang, resKelas] = await Promise.all([
+      const [resJenjang, resKelas, resSekolah] = await Promise.all([
         fetch('/api/master/jenjang'),
         fetch('/api/master/kelas'),
+        fetch('/api/pengaturan/sekolah'),
       ])
       const dataJenjang = await resJenjang.json()
       const dataKelas = await resKelas.json()
+      const dataSekolah = await resSekolah.json()
 
       if (dataJenjang.success) setMasterJenjang(dataJenjang.data)
       if (dataKelas.success) setAllKelas(dataKelas.data)
+      if (dataSekolah.success && dataSekolah.data) setSekolahInfo(dataSekolah.data)
     } catch (err) {
       console.error('Fetch master error:', err)
     }
@@ -192,7 +244,7 @@ export default function SiswaPage() {
       fetchData()
     }, 250)
     return () => clearTimeout(timer)
-  }, [search, selectedJenjang, selectedKelas, selectedStatus, selectedGender])
+  }, [search, selectedJenjang, selectedKelas, selectedStatus, selectedGender, scopeMode])
 
   // Filter kelas untuk dropdown berdasarkan jenjang yang dipilih
   const availableKelas = useMemo(() => {
@@ -205,10 +257,23 @@ export default function SiswaPage() {
     return masterJenjang.find((j) => j.id === parseInt(formData.jenjangId, 10))
   }, [formData.jenjangId, masterJenjang])
 
+  // Filter kelas untuk toolbar pencarian
+  const filteredKelasForSearch = useMemo(() => {
+    let list = allKelas
+    if (isGuru && scopeMode === 'my_students' && user?.guruScope?.kelasIds && user.guruScope.kelasIds.length > 0) {
+      list = list.filter((k) => user.guruScope!.kelasIds.includes(k.id))
+    } else if (selectedJenjang) {
+      list = list.filter((k) => k.jenjangId === parseInt(selectedJenjang, 10))
+    }
+    return list
+  }, [allKelas, isGuru, scopeMode, user?.guruScope, selectedJenjang])
+
   // Reset form
   const handleOpenAdd = () => {
     setEditingSiswa(null)
-    const defaultJenjang = masterJenjang[0]?.id ? String(masterJenjang[0].id) : ''
+    const defaultJenjang = isSingleJenjang && defaultJenjangId
+      ? String(defaultJenjangId)
+      : (masterJenjang[0]?.id ? String(masterJenjang[0].id) : '')
     setFormData({
       jenjangId: defaultJenjang,
       kelasId: '',
@@ -289,6 +354,37 @@ export default function SiswaPage() {
       setFormError('Gagal mengunggah foto: ' + err.message)
     } finally {
       setIsUploadingPhoto(false)
+      if (e.target) {
+        e.target.value = ''
+      }
+    }
+  }
+
+  // Handle Hapus Foto di Form (Tambah / Ubah Siswa)
+  const handleRemoveFormPhoto = () => {
+    setFormData((prev: any) => ({ ...prev, fotoUrl: '' }))
+  }
+
+  // Handle Hapus Foto Siswa Langsung dari Tabel
+  const handleDeleteSiswaPhoto = async (siswa: Siswa) => {
+    if (!siswa.fotoUrl) return
+    const confirmed = window.confirm(
+      `Apakah Anda yakin ingin menghapus foto profil siswa "${siswa.nama}" (NIS: ${siswa.nis})?`
+    )
+    if (!confirmed) return
+
+    try {
+      const res = await fetch(`/api/siswa/${siswa.id}/foto`, {
+        method: 'DELETE',
+      })
+      const resJson = await res.json()
+      if (!resJson.success) {
+        alert(resJson.message || 'Gagal menghapus foto siswa')
+        return
+      }
+      fetchData()
+    } catch (err: any) {
+      alert('Terjadi kesalahan saat menghapus foto: ' + err.message)
     }
   }
 
@@ -385,7 +481,7 @@ export default function SiswaPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <a
-            href={`/api/siswa/export?jenjangId=${selectedJenjang}&kelasId=${selectedKelas}&status=${selectedStatus}`}
+            href={`/api/siswa/export?jenjangId=${selectedJenjang}&kelasId=${selectedKelas}&status=${selectedStatus}${isGuru ? `&scope=${scopeMode}` : ''}`}
             className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-[#3B82F6] hover:text-[#1E3A8A] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition"
           >
             <Download className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -415,6 +511,74 @@ export default function SiswaPage() {
           )}
         </div>
       </div>
+
+      {/* Scope Switcher Khusus Akun Guru / Wali Kelas */}
+      {isGuru && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-white p-4 shadow-sm dark:border-blue-900/50 dark:from-blue-950/40 dark:via-slate-900 dark:to-slate-900">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#2563EB] text-white shadow-sm shadow-blue-500/20">
+              <GraduationCap className="h-5 w-5 text-amber-300" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
+                  Mode Akses Pendidik
+                </span>
+                {user?.pegawai && (
+                  <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-800 dark:bg-blue-900/60 dark:text-blue-200 border border-blue-300/40">
+                    👨‍🏫 {user.pegawai.nama}
+                  </span>
+                )}
+                {user?.jenjang && (
+                  <span className="rounded-md bg-indigo-100 px-2 py-0.5 text-[11px] font-bold text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-300/40">
+                    Jenjang {user.jenjang.kode}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                {scopeMode === 'my_students'
+                  ? user?.guruScope?.kelasNames && user.guruScope.kelasNames.length > 0
+                    ? `Menampilkan siswa dari kelas yang Anda ampu: ${user.guruScope.kelasNames.join(', ')}`
+                    : user?.guruScope?.jenjangKodes && user.guruScope.jenjangKodes.length > 0
+                    ? `Menampilkan siswa dari jenjang tugas Anda: ${user.guruScope.jenjangKodes.join(', ')}`
+                    : 'Menampilkan siswa binaan sesuai profil penugasan Anda.'
+                  : 'Menampilkan direktori seluruh peserta didik di sistem sekolah.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 self-start sm:self-auto rounded-xl bg-white/90 p-1 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 shadow-xs">
+            <button
+              onClick={() => {
+                setScopeMode('my_students')
+                setSelectedKelas('')
+              }}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                scopeMode === 'my_students'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              <UserCheck className="h-3.5 w-3.5" />
+              <span>Siswa Binaan Saya</span>
+            </button>
+            <button
+              onClick={() => {
+                setScopeMode('all')
+                if (user?.jenjangId) setSelectedJenjang(String(user.jenjangId))
+              }}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                scopeMode === 'all'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              <span>Semua Siswa</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 6 Statistik Kesiswaan */}
       {stats && (
@@ -501,39 +665,49 @@ export default function SiswaPage() {
             />
           </div>
 
-          <div>
-            <SearchableSelect
-              value={selectedJenjang}
-              onChange={(val) => {
-                setSelectedJenjang(val)
-                setSelectedKelas('')
-              }}
-              options={[
-                { value: '', label: 'Semua Jenjang' },
-                ...masterJenjang.map((j) => ({
-                  value: String(j.id),
-                  label: `${j.kode} (${j.nama})`,
-                })),
-              ]}
-              placeholder="Semua Jenjang"
-              searchPlaceholder="Cari jenjang..."
-            />
-          </div>
+          {!isSingleJenjang && (
+            <div>
+              <SearchableSelect
+                value={selectedJenjang}
+                onChange={(val) => {
+                  setSelectedJenjang(val)
+                  setSelectedKelas('')
+                }}
+                options={[
+                  { value: '', label: 'Semua Jenjang' },
+                  ...masterJenjang.map((j) => ({
+                    value: String(j.id),
+                    label: `${j.kode} (${j.nama})`,
+                  })),
+                ]}
+                placeholder="Semua Jenjang"
+                searchPlaceholder="Cari jenjang..."
+              />
+            </div>
+          )}
 
           <div>
             <SearchableSelect
               value={selectedKelas}
               onChange={(val) => setSelectedKelas(val)}
               options={[
-                { value: '', label: 'Semua Kelas' },
-                ...allKelas
-                  .filter((k) => (!selectedJenjang ? true : k.jenjangId === parseInt(selectedJenjang, 10)))
-                  .map((k) => ({
-                    value: String(k.id),
-                    label: k.namaKelas,
-                  })),
+                {
+                  value: '',
+                  label:
+                    isGuru && scopeMode === 'my_students' && user?.guruScope?.kelasIds?.length
+                      ? 'Semua Kelas Binaan Anda'
+                      : 'Semua Kelas',
+                },
+                ...filteredKelasForSearch.map((k) => ({
+                  value: String(k.id),
+                  label: k.namaKelas,
+                })),
               ]}
-              placeholder="Semua Kelas"
+              placeholder={
+                isGuru && scopeMode === 'my_students' && user?.guruScope?.kelasIds?.length
+                  ? 'Semua Kelas Binaan'
+                  : 'Semua Kelas'
+              }
               searchPlaceholder="Cari kelas..."
             />
           </div>
@@ -555,12 +729,75 @@ export default function SiswaPage() {
         </div>
       </div>
 
+      {/* Bar Kontrol Seleksi Massal (Identik dengan Menu Sarpras) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={siswaList.length > 0 && selectedIds.length === siswaList.length}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedIds(siswaList.map((s) => s.id))
+              } else {
+                setSelectedIds([])
+              }
+            }}
+            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+          />
+          <span>Pilih Semua Siswa ({siswaList.length} siswa di halaman ini)</span>
+        </label>
+
+        <div className="flex items-center gap-3">
+          {selectedIds.length > 0 ? (
+            <>
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                {selectedIds.length} siswa terpilih untuk cetak kartu
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedIds([])}
+                className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 underline"
+              >
+                Batalkan
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsBulkCardModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition"
+              >
+                <CreditCard className="h-3.5 w-3.5" />
+                <span>Cetak Kartu Pelajar ({selectedIds.length})</span>
+              </button>
+            </>
+          ) : (
+            <span className="text-xs text-slate-400">
+              Pilih siswa pada tabel untuk mencetak kartu pelajar secara massal
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Tabel Data Siswa */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600 dark:text-slate-400">
             <thead className="border-b border-slate-200 bg-slate-100/90 text-xs uppercase text-[#1E3A8A] font-semibold dark:border-slate-800 dark:bg-slate-800/60 dark:text-blue-300">
               <tr>
+                <th scope="col" className="w-10 px-3 py-3.5 text-center">
+                  <input
+                    type="checkbox"
+                    checked={siswaList.length > 0 && selectedIds.length === siswaList.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIds(siswaList.map((s) => s.id))
+                      } else {
+                        setSelectedIds([])
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    title="Pilih Semua Siswa"
+                  />
+                </th>
                 <th scope="col" className="px-4 py-3.5">
                   Peserta Didik
                 </th>
@@ -568,7 +805,7 @@ export default function SiswaPage() {
                   NIS / NISN
                 </th>
                 <th scope="col" className="px-4 py-3.5">
-                  Jenjang & Rombel
+                  {isSingleJenjang ? 'Rombel / Kelas' : 'Jenjang & Rombel'}
                 </th>
                 <th scope="col" className="px-4 py-3.5 text-center">
                   L/P
@@ -587,23 +824,43 @@ export default function SiswaPage() {
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 [&>tr:nth-child(even)]:bg-slate-50/60">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                  <td colSpan={8} className="py-12 text-center text-slate-500">
                     Memuat data siswa...
                   </td>
                 </tr>
               ) : siswaList.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                  <td colSpan={8} className="py-12 text-center text-slate-500">
                     Tidak ada data siswa yang sesuai dengan filter pencarian.
                   </td>
                 </tr>
               ) : (
-                siswaList.map((siswa) => (
-                  <tr
-                    key={siswa.id}
-                    className="hover:bg-blue-50/50 dark:hover:bg-slate-800/40 transition-colors"
-                  >
-                    <td className="px-4 py-3">
+                siswaList.map((siswa) => {
+                  const isSelected = selectedIds.includes(siswa.id)
+                  return (
+                    <tr
+                      key={siswa.id}
+                      className={`transition-colors ${
+                        isSelected
+                          ? 'bg-blue-50/90 dark:bg-blue-950/40'
+                          : 'hover:bg-blue-50/50 dark:hover:bg-slate-800/40'
+                      }`}
+                    >
+                      <td className="w-10 px-3 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds([...selectedIds, siswa.id])
+                            } else {
+                              setSelectedIds(selectedIds.filter((id) => id !== siswa.id))
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {siswa.fotoUrl ? (
                           <img
@@ -640,8 +897,8 @@ export default function SiswaPage() {
                         {siswa.kelas?.namaKelas || 'Belum Masuk Kelas'}
                       </div>
                       <div className="text-xs text-slate-500">
-                        {siswa.jenjang?.kode}
-                        {siswa.jurusan ? ` • ${siswa.jurusan.kodeJurusan}` : ''}
+                        {!isSingleJenjang && `${siswa.jenjang?.kode} `}
+                        {siswa.jurusan ? `${!isSingleJenjang ? '• ' : ''}${siswa.jurusan.kodeJurusan}` : ''}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -694,6 +951,15 @@ export default function SiswaPage() {
                             <Pencil className="h-4 w-4" />
                           </button>
                         )}
+                        {allowEdit && siswa.fotoUrl && (
+                          <button
+                            onClick={() => handleDeleteSiswaPhoto(siswa)}
+                            title="Hapus Foto Siswa"
+                            className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:text-slate-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition"
+                          >
+                            <CameraOff className="h-4 w-4" />
+                          </button>
+                        )}
                         {allowDelete && (
                           <button
                             onClick={() => handleDeleteSiswa(siswa)}
@@ -706,7 +972,8 @@ export default function SiswaPage() {
                       </div>
                     </td>
                   </tr>
-                ))
+                )
+              })
               )}
             </tbody>
           </table>
@@ -741,15 +1008,26 @@ export default function SiswaPage() {
             <form onSubmit={handleSaveSiswa} className="mt-4 space-y-6">
               {/* Bagian Foto & Data Pokok */}
               <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-                {/* Upload Foto */}
+                {/* Upload & Kelola Foto */}
                 <div className="flex flex-col items-center gap-2">
-                  <div className="relative h-28 w-28 overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                  <div className="relative group h-28 w-28 overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800 shadow-inner">
                     {formData.fotoUrl ? (
-                      <img
-                        src={formData.fotoUrl}
-                        alt="Pas Foto"
-                        className="h-full w-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={formData.fotoUrl}
+                          alt="Pas Foto"
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveFormPhoto}
+                          title="Hapus foto saat ini"
+                          className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="h-5 w-5 text-rose-400 mb-0.5" />
+                          <span className="text-[10px] font-semibold">Hapus</span>
+                        </button>
+                      </>
                     ) : (
                       <div className="flex h-full w-full flex-col items-center justify-center text-slate-400">
                         <Camera className="h-8 w-8" />
@@ -757,42 +1035,69 @@ export default function SiswaPage() {
                       </div>
                     )}
                   </div>
-                  <label className="cursor-pointer rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                    {isUploadingPhoto ? 'Mengunggah...' : 'Pilih Foto'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      disabled={isUploadingPhoto}
-                      className="hidden"
-                    />
-                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="cursor-pointer rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 transition">
+                      {isUploadingPhoto ? 'Mengunggah...' : formData.fotoUrl ? 'Ganti Foto' : 'Pilih Foto'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        disabled={isUploadingPhoto}
+                        className="hidden"
+                      />
+                    </label>
+                    {formData.fotoUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveFormPhoto}
+                        className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-100 hover:border-rose-300 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-400 transition"
+                        title="Hapus foto siswa"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Hapus</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Input Pokok */}
                 <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Jenjang Pendidikan *
-                    </label>
-                    <SearchableSelect
-                      value={formData.jenjangId}
-                      onChange={(val) =>
-                        setFormData({
-                          ...formData,
-                          jenjangId: val,
-                          kelasId: '',
-                          jurusanId: '',
-                        })
-                      }
-                      options={masterJenjang.map((j) => ({
-                        value: String(j.id),
-                        label: `${j.kode} - ${j.nama}`,
-                      }))}
-                      placeholder="-- Pilih Jenjang --"
-                      searchPlaceholder="Cari jenjang..."
-                      required
-                    />
+                    {isSingleJenjang ? (
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Jenjang Pendidikan
+                        </label>
+                        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                          <GraduationCap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          <span>{jenjangUtama ? `${jenjangUtama.kode} (${jenjangUtama.nama})` : 'Terkunci'}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Jenjang Pendidikan *
+                        </label>
+                        <SearchableSelect
+                          value={formData.jenjangId}
+                          onChange={(val) =>
+                            setFormData({
+                              ...formData,
+                              jenjangId: val,
+                              kelasId: '',
+                              jurusanId: '',
+                            })
+                          }
+                          options={masterJenjang.map((j) => ({
+                            value: String(j.id),
+                            label: `${j.kode} - ${j.nama}`,
+                          }))}
+                          placeholder="-- Pilih Jenjang --"
+                          searchPlaceholder="Cari jenjang..."
+                          required
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1155,6 +1460,14 @@ export default function SiswaPage() {
           </div>
         </div>
       )}
+
+      {/* Modal Cetak Kartu Pelajar Massal */}
+      <KartuPelajarMasalModal
+        isOpen={isBulkCardModalOpen}
+        onClose={() => setIsBulkCardModalOpen(false)}
+        siswaList={siswaList.filter((s) => selectedIds.includes(s.id))}
+        sekolah={sekolahInfo}
+      />
     </div>
   )
 }

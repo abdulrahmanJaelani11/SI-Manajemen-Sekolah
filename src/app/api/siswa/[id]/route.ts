@@ -104,9 +104,12 @@ export async function PUT(
       }
     }
 
-    // Jika foto diganti, bersihkan foto lama
-    if (fotoUrl && existing.fotoUrl && fotoUrl !== existing.fotoUrl) {
-      await storage.delete(existing.fotoUrl)
+    // Jika foto diganti atau dihapus, bersihkan foto lama dari storage
+    if (fotoUrl !== undefined && existing.fotoUrl) {
+      const cleanNewFoto = fotoUrl ? String(fotoUrl).trim() : null
+      if (!cleanNewFoto || cleanNewFoto !== existing.fotoUrl) {
+        await storage.delete(existing.fotoUrl)
+      }
     }
 
     const updated = await prisma.siswa.update({
