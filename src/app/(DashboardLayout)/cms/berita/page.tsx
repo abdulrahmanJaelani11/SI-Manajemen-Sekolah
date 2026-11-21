@@ -19,6 +19,8 @@ import {
   Sparkles,
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 interface BeritaItem {
   id: number
@@ -46,6 +48,17 @@ export default function CmsBeritaPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [kategoriFilter, setKategoriFilter] = useState('Semua')
+
+  // Pagination
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useTablePagination(beritaList, 15)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<BeritaItem | null>(null)
@@ -334,7 +347,7 @@ export default function CmsBeritaPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {beritaList.map((item) => (
+                {paginatedItems.map((item) => (
                   <tr key={item.id} className="transition hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
@@ -465,6 +478,17 @@ export default function CmsBeritaPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Bar */}
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            pageSizeOptions={[10, 15, 25, 50]}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPageSizeChange={(s) => setPageSize(s)}
+          />
         </div>
       )}
 

@@ -28,6 +28,7 @@ import {
 import { formatRupiah, terbilang } from '@/lib/terbilang'
 import { BukuKasItem } from '@/app/api/keuangan/laporan/route'
 import SearchableSelect from '@/components/ui/searchable-select'
+import TablePagination from '@/components/ui/table-pagination'
 
 export default function LaporanKeuanganPage() {
   const [loading, setLoading] = useState(true)
@@ -1272,33 +1273,15 @@ export default function LaporanKeuanganPage() {
           </div>
 
           {/* Pagination Bar */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 text-xs text-gray-500">
-              <div>
-                Menampilkan {(currentPage - 1) * pageSize + 1} s.d.{' '}
-                {Math.min(currentPage * pageSize, displayedItems.length)} dari {displayedItems.length} data
-              </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Sebelumnya
-                </button>
-                <span className="px-2 font-medium">
-                  {currentPage} / {totalPages}
-                </span>
-                <button
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Selanjutnya
-                </button>
-              </div>
-            </div>
-          )}
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={displayedItems.length}
+            pageSize={pageSize}
+            pageSizeOptions={[10, 25, 50, 100]}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPageSizeChange={(s) => setPageSize(s)}
+          />
         </div>
       )}
 

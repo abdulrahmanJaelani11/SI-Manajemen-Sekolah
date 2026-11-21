@@ -14,6 +14,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 const JENIS_BADGE: Record<string, { label: string; style: string }> = {
   keluar: {
@@ -55,6 +57,22 @@ export default function MutasiSiswaPage() {
   // Filter
   const [filterJenis, setFilterJenis] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Pagination
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(logs, 20)
+
+  useEffect(() => {
+    resetPage()
+  }, [filterJenis, searchQuery])
 
   // Modal Mutasi Keluar / DO
   const [isKeluarOpen, setIsKeluarOpen] = useState(false)
@@ -385,7 +403,7 @@ export default function MutasiSiswaPage() {
                   </td>
                 </tr>
               ) : (
-                logs.map((row) => {
+                paginatedItems.map((row) => {
                   const badge = JENIS_BADGE[row.jenisMutasi] || JENIS_BADGE.keluar
                   return (
                     <tr key={row.id} className="hover:bg-slate-50/70">
@@ -450,6 +468,17 @@ export default function MutasiSiswaPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 20, 50, 100]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* MODAL MUTASI KELUAR / DO */}

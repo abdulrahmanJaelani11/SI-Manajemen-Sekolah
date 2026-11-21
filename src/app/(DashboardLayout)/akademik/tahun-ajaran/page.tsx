@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 interface TahunAjaranItem {
   id: number
@@ -40,6 +42,17 @@ export default function TahunAjaranPage() {
   const [activePeriod, setActivePeriod] = useState<TahunAjaranItem | null>(null)
   const [stats, setStats] = useState({ totalPeriode: 0, totalSiswaAktif: 0, totalKelas: 0 })
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Pagination
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useTablePagination(periods, 15)
 
   // Modal Tambah/Edit
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -357,7 +370,7 @@ export default function TahunAjaranPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {periods.map((item) => (
+                {paginatedItems.map((item) => (
                   <tr
                     key={item.id}
                     className={`transition-colors ${
@@ -441,6 +454,17 @@ export default function TahunAjaranPage() {
             </table>
           </div>
         )}
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 15, 25, 50]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* Modal Tambah / Edit Tahun Ajaran */}

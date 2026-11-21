@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 export default function MataPelajaranPage() {
   const { canCreate, canEdit, canDelete } = usePermission()
@@ -47,6 +49,10 @@ export default function MataPelajaranPage() {
   const [pengampuTa, setPengampuTa] = useState('2024/2025')
   const [pengampuSemester, setPengampuSemester] = useState('Ganjil')
   const [pengampuKelasId, setPengampuKelasId] = useState('')
+
+  // Pagination
+  const mapelPagination = useTablePagination(mapelList, 20)
+  const pengampuPagination = useTablePagination(pengampuList, 20)
 
   // Modal Mapel
   const [isMapelModalOpen, setIsMapelModalOpen] = useState(false)
@@ -438,7 +444,7 @@ export default function MataPelajaranPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {mapelList.map((item) => (
+                    {mapelPagination.paginatedItems.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
                         <td className="px-6 py-3.5 font-mono font-bold text-blue-600 dark:text-blue-400">
                           {item.kode}
@@ -498,6 +504,17 @@ export default function MataPelajaranPage() {
                 </table>
               </div>
             )}
+
+            {/* Pagination Bar */}
+            <TablePagination
+              currentPage={mapelPagination.currentPage}
+              totalPages={mapelPagination.totalPages}
+              totalItems={mapelPagination.totalItems}
+              pageSize={mapelPagination.pageSize}
+              pageSizeOptions={[10, 20, 50, 100]}
+              onPageChange={(p) => mapelPagination.setCurrentPage(p)}
+              onPageSizeChange={(s) => mapelPagination.setPageSize(s)}
+            />
           </div>
         </div>
       ) : (
@@ -572,7 +589,7 @@ export default function MataPelajaranPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {pengampuList.map((item) => (
+                    {pengampuPagination.paginatedItems.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
                         <td className="px-6 py-3.5 font-bold text-slate-900 dark:text-white">
                           {item.kelas?.jenjang?.kode} - {item.kelas?.namaKelas}
@@ -621,6 +638,17 @@ export default function MataPelajaranPage() {
                 </table>
               </div>
             )}
+
+            {/* Pagination Bar */}
+            <TablePagination
+              currentPage={pengampuPagination.currentPage}
+              totalPages={pengampuPagination.totalPages}
+              totalItems={pengampuPagination.totalItems}
+              pageSize={pengampuPagination.pageSize}
+              pageSizeOptions={[10, 20, 50, 100]}
+              onPageChange={(p) => pengampuPagination.setCurrentPage(p)}
+              onPageSizeChange={(s) => pengampuPagination.setPageSize(s)}
+            />
           </div>
         </div>
       )}

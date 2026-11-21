@@ -15,6 +15,7 @@ import { formatRupiah, BULAN_AKADEMIK } from '@/lib/terbilang'
 import KuitansiModal from '@/components/spp/KuitansiModal'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import TablePagination from '@/components/ui/table-pagination'
 
 export default function RiwayatSppPage() {
   const { canDelete } = usePermission()
@@ -32,6 +33,7 @@ export default function RiwayatSppPage() {
   const [status, setStatus] = useState('')
   const [metodeBayar, setMetodeBayar] = useState('')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
 
   // Kuitansi Modal
   const [isKuitansiOpen, setIsKuitansiOpen] = useState(false)
@@ -47,6 +49,7 @@ export default function RiwayatSppPage() {
       if (status) params.append('status', status)
       if (metodeBayar) params.append('metodeBayar', metodeBayar)
       params.append('page', String(page))
+      params.append('limit', String(pageSize))
 
       const res = await fetch(`/api/spp/riwayat?${params.toString()}`)
       const data = await res.json()
@@ -73,11 +76,15 @@ export default function RiwayatSppPage() {
   }, [])
 
   useEffect(() => {
+    setPage(1)
+  }, [search, tahunAjaran, bulan, status, metodeBayar])
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       fetchRiwayat()
     }, 250)
     return () => clearTimeout(timer)
-  }, [search, tahunAjaran, bulan, status, metodeBayar, page])
+  }, [search, tahunAjaran, bulan, status, metodeBayar, page, pageSize])
 
   // Handle Void
   const handleVoidTransaksi = async (item: any) => {
@@ -326,6 +333,17 @@ export default function RiwayatSppPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={page}
+          totalPages={meta.totalPages || 1}
+          totalItems={meta.total || items.length}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50, 100]}
+          onPageChange={(p) => setPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* Modal Kuitansi */}

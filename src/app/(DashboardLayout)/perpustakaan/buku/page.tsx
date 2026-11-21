@@ -27,6 +27,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 interface BukuItem {
   id: number
@@ -290,6 +292,22 @@ export default function KatalogBukuPage() {
     )
   }, [bukuList, searchQuery])
 
+  // Pagination
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(displayedBuku, 12)
+
+  useEffect(() => {
+    resetPage()
+  }, [searchQuery, selectedKategori])
+
   return (
     <div className="space-y-6 pb-12">
       {/* 1. HEADER SECTION */}
@@ -474,7 +492,7 @@ export default function KatalogBukuPage() {
       ) : viewMode === 'grid' ? (
         /* GRID VIEW */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {displayedBuku.map((buku) => (
+          {paginatedItems.map((buku) => (
             <div
               key={buku.id}
               className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs hover:shadow-md transition overflow-hidden flex flex-col group"
@@ -591,9 +609,9 @@ export default function KatalogBukuPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700 font-medium">
-                {displayedBuku.map((buku, idx) => (
+                {paginatedItems.map((buku, idx) => (
                   <tr key={buku.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-750 transition">
-                    <td className="py-3 px-4 text-center text-gray-400">{idx + 1}</td>
+                    <td className="py-3 px-4 text-center text-gray-400">{(currentPage - 1) * pageSize + idx + 1}</td>
                     <td className="py-3 px-4 font-mono font-semibold text-gray-800 dark:text-gray-200">
                       {buku.kodeBuku}
                     </td>
@@ -661,6 +679,20 @@ export default function KatalogBukuPage() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Pagination Bar untuk Grid & Table View */}
+      {displayedBuku.length > 0 && !loading && (
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[8, 12, 24, 48, 100]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+          className="shadow-sm"
+        />
       )}
 
       {/* 5. MODAL TAMBAH / EDIT BUKU */}

@@ -16,6 +16,8 @@ import {
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
 import { useInstitution } from '@/context/InstitutionContext'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 interface Jenjang {
   id: number
@@ -68,6 +70,22 @@ export default function KelasPage() {
   // Filters
   const [selectedJenjang, setSelectedJenjang] = useState('')
   const [selectedTingkat, setSelectedTingkat] = useState('')
+
+  // Pagination
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(kelasList, 15)
+
+  useEffect(() => {
+    resetPage()
+  }, [selectedJenjang, selectedTingkat])
 
   // Sinkronisasi otomatis jenjang pada mode Single-Jenjang
   useEffect(() => {
@@ -422,7 +440,7 @@ export default function KelasPage() {
                   </td>
                 </tr>
               ) : (
-                kelasList.map((k) => {
+                paginatedItems.map((k) => {
                   const siswaCount = k._count?.siswa || 0
                   const ratio = Math.min(100, Math.round((siswaCount / (k.kapasitas || 36)) * 100))
 
@@ -519,6 +537,17 @@ export default function KelasPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 15, 25, 50]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* ======================================================== */}

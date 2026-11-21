@@ -14,6 +14,8 @@ import {
   Check,
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 interface FasilitasItem {
   id: number
@@ -32,6 +34,17 @@ export default function CmsFasilitasPage() {
 
   const [fasilitas, setFasilitas] = useState<FasilitasItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Pagination for Fasilitas grid
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useTablePagination(fasilitas, 9)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<FasilitasItem | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -228,8 +241,9 @@ export default function CmsFasilitasPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {fasilitas.map((item) => (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {paginatedItems.map((item) => (
             <div
               key={item.id}
               className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
@@ -296,6 +310,20 @@ export default function CmsFasilitasPage() {
             </div>
           ))}
         </div>
+
+        {/* Pagination Bar */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            pageSizeOptions={[6, 9, 15, 30]}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPageSizeChange={(s) => setPageSize(s)}
+          />
+        </div>
+      </div>
       )}
 
       {/* Modal Tambah / Edit */}

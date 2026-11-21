@@ -15,6 +15,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 const STATUS_OPTIONS = [
   { value: 'hadir', label: 'Hadir', short: 'H', activeCls: 'bg-emerald-600 text-white border-emerald-600' },
@@ -43,6 +45,10 @@ export default function AbsensiKelasPage() {
 
   const [rows, setRows] = useState<any[]>([])
   const [rekapRows, setRekapRows] = useState<any[]>([])
+
+  // Pagination
+  const harianPagination = useTablePagination(rows, 25)
+  const rekapPagination = useTablePagination(rekapRows, 25)
 
   const fetchData = async (mode = activeTab, kId = selectedKelasId, tgl = tanggal, bln = bulan) => {
     setLoading(true)
@@ -327,9 +333,11 @@ export default function AbsensiKelasPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {rows.map((r, idx) => (
+                    {harianPagination.paginatedItems.map((r, idx) => (
                       <tr key={r.siswaId} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                        <td className="px-4 py-3 text-center font-mono text-slate-400">{idx + 1}</td>
+                        <td className="px-4 py-3 text-center font-mono text-slate-400">
+                          {(harianPagination.currentPage - 1) * harianPagination.pageSize + idx + 1}
+                        </td>
                         <td className="px-4 py-3">
                           <span className="font-bold text-slate-900 dark:text-white block">
                             {r.nama}
@@ -390,6 +398,17 @@ export default function AbsensiKelasPage() {
                 </table>
               </div>
 
+              {/* Pagination Bar */}
+              <TablePagination
+                currentPage={harianPagination.currentPage}
+                totalPages={harianPagination.totalPages}
+                totalItems={harianPagination.totalItems}
+                pageSize={harianPagination.pageSize}
+                pageSizeOptions={[10, 20, 25, 50, 100]}
+                onPageChange={(p) => harianPagination.setCurrentPage(p)}
+                onPageSizeChange={(s) => harianPagination.setPageSize(s)}
+              />
+
               <div className="flex justify-end bg-slate-50 px-6 py-4 border-t border-slate-200 dark:bg-slate-800/40 dark:border-slate-800">
                 {allowCreate ? (
                   <button
@@ -421,7 +440,8 @@ export default function AbsensiKelasPage() {
               Belum ada data siswa di kelas ini.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-800/60 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
                   <tr>
@@ -436,9 +456,11 @@ export default function AbsensiKelasPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {rekapRows.map((r, idx) => (
+                  {rekapPagination.paginatedItems.map((r, idx) => (
                     <tr key={r.siswaId} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                      <td className="px-4 py-3 text-center font-mono text-slate-400">{idx + 1}</td>
+                      <td className="px-4 py-3 text-center font-mono text-slate-400">
+                        {(rekapPagination.currentPage - 1) * rekapPagination.pageSize + idx + 1}
+                      </td>
                       <td className="px-4 py-3">
                         <span className="font-bold text-slate-900 dark:text-white block">
                           {r.nama}
@@ -468,6 +490,18 @@ export default function AbsensiKelasPage() {
                 </tbody>
               </table>
             </div>
+
+              {/* Pagination Bar */}
+              <TablePagination
+                currentPage={rekapPagination.currentPage}
+                totalPages={rekapPagination.totalPages}
+                totalItems={rekapPagination.totalItems}
+                pageSize={rekapPagination.pageSize}
+                pageSizeOptions={[10, 20, 25, 50, 100]}
+                onPageChange={(p) => rekapPagination.setCurrentPage(p)}
+                onPageSizeChange={(s) => rekapPagination.setPageSize(s)}
+              />
+            </>
           )}
         </div>
       )}

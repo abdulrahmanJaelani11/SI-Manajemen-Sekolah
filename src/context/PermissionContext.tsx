@@ -69,28 +69,8 @@ const PermissionContext = createContext<PermissionContextType>({
   refreshUser: async () => {},
 })
 
-// Menu yang memerlukan proteksi otorisasi khusus
-const PROTECTED_SYSTEM_PATHS = [
-  '/',
-  '/siswa',
-  '/kelas',
-  '/jurusan',
-  '/pegawai',
-  '/spp/kasir',
-  '/spp/riwayat',
-  '/spp/tunggakan',
-  '/spp/tarif',
-  '/cms/carousel',
-  '/cms/keunggulan',
-  '/cms/berita',
-  '/cms/fasilitas',
-  '/cms/kegiatan',
-  '/pengaturan/pengguna',
-  '/pengaturan/role',
-  '/pengaturan/hak-akses',
-  '/pengaturan/menu',
-  '/pengaturan/sekolah',
-]
+// Path utilitas umum dalam dashboard yang dapat diakses oleh semua pengguna terautentikasi
+const PUBLIC_DASHBOARD_PATHS = ['/user-profile']
 
 export function PermissionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserSession | null>(null)
@@ -132,31 +112,35 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
 
   const isAdmin = !!user && (user.roleName?.toLowerCase() === 'administrator' || user.roleId === 1)
 
-  // Evaluasi Hak Akses View
+  // Helper untuk mencocokkan permission path dengan target path
+  const findPermission = (path?: string): PermissionItem | undefined => {
+    if (!path || !user?.permissions) return undefined
+    const cleanPath = path.split('?')[0].replace(/\/$/, '') || '/'
+
+    return user.permissions.find((p) => {
+      const pClean = p.menuPath.replace(/\/$/, '') || '/'
+      return pClean === cleanPath || (pClean !== '/' && (cleanPath.startsWith(pClean + '/') || cleanPath === pClean))
+    })
+  }
+
+  // Evaluasi Hak Akses View (Strict RBAC / Default Deny)
   const canView = (path?: string): boolean => {
     if (!path) return true
     if (!user) return false // Pengguna belum terautentikasi tidak diizinkan
     if (isAdmin) return true
     if (!user.permissions || user.permissions.length === 0) return false
 
-    // Bersihkan path
-    const cleanPath = path.split('?')[0]
+    const cleanPath = path.split('?')[0].replace(/\/$/, '') || '/'
 
-    // Cek apakah path termasuk menu sistem terdaftar
-    const matched = user.permissions.find(
-      (p) => p.menuPath === cleanPath || (p.menuPath !== '/' && cleanPath.startsWith(p.menuPath))
-    )
-
-    if (matched) {
-      return matched.canView
+    // Halaman profil pengguna selalu dapat diakses oleh user aktif
+    if (PUBLIC_DASHBOARD_PATHS.some((p) => cleanPath === p || cleanPath.startsWith(p + '/'))) {
+      return true
     }
 
-    // Jika path tidak ada dalam proteksi RBAC, izinkan
-    const isProtected = PROTECTED_SYSTEM_PATHS.some(
-      (p) => p === cleanPath || (p !== '/' && cleanPath.startsWith(p))
-    )
+    const matched = findPermission(cleanPath)
 
-    return !isProtected
+    // Strict RBAC: Hanya izinkan jika eksplisit terdaftar di role dan canView bernilai true
+    return matched ? Boolean(matched.canView) : false
   }
 
   const canCreate = (path?: string): boolean => {
@@ -165,11 +149,8 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
     if (isAdmin) return true
     if (!user?.permissions) return false
 
-    const cleanPath = path.split('?')[0]
-    const matched = user.permissions.find(
-      (p) => p.menuPath === cleanPath || (p.menuPath !== '/' && cleanPath.startsWith(p.menuPath))
-    )
-    return matched ? matched.canCreate : false
+    const matched = findPermission(path)
+    return matched ? Boolean(matched.canCreate) : false
   }
 
   const canEdit = (path?: string): boolean => {
@@ -178,11 +159,8 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
     if (isAdmin) return true
     if (!user?.permissions) return false
 
-    const cleanPath = path.split('?')[0]
-    const matched = user.permissions.find(
-      (p) => p.menuPath === cleanPath || (p.menuPath !== '/' && cleanPath.startsWith(p.menuPath))
-    )
-    return matched ? matched.canEdit : false
+    const matched = findPermission(path)
+    return matched ? Boolean(matched.canEdit) : false
   }
 
   const canDelete = (path?: string): boolean => {
@@ -191,11 +169,8 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
     if (isAdmin) return true
     if (!user?.permissions) return false
 
-    const cleanPath = path.split('?')[0]
-    const matched = user.permissions.find(
-      (p) => p.menuPath === cleanPath || (p.menuPath !== '/' && cleanPath.startsWith(p.menuPath))
-    )
-    return matched ? matched.canDelete : false
+    const matched = findPermission(path)
+    return matched ? Boolean(matched.canDelete) : false
   }
 
   const logout = async () => {

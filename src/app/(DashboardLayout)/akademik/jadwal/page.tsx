@@ -20,6 +20,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 const HARI_LIST = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
 
@@ -47,6 +49,8 @@ export default function JadwalPelajaranPage() {
   const [guruList, setGuruList] = useState<any[]>([])
   const [pengampuList, setPengampuList] = useState<any[]>([])
   const [allPeriods, setAllPeriods] = useState<any[]>([])
+
+  const slotPagination = useTablePagination(jamSlots, 15)
 
   // Modal Isi/Edit Cell Jadwal
   const [isJadwalModalOpen, setIsJadwalModalOpen] = useState(false)
@@ -619,7 +623,7 @@ export default function JadwalPelajaranPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {jamSlots.map((slot) => (
+                {slotPagination.paginatedItems.map((slot) => (
                   <tr
                     key={slot.id}
                     className={
@@ -672,6 +676,17 @@ export default function JadwalPelajaranPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Bar */}
+          <TablePagination
+            currentPage={slotPagination.currentPage}
+            totalPages={slotPagination.totalPages}
+            totalItems={slotPagination.totalItems}
+            pageSize={slotPagination.pageSize}
+            pageSizeOptions={[10, 15, 25, 50]}
+            onPageChange={(p) => slotPagination.setCurrentPage(p)}
+            onPageSizeChange={(s) => slotPagination.setPageSize(s)}
+          />
         </div>
       )}
 

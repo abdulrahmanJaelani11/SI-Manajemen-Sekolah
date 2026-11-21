@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 const KARIR_BADGE: Record<string, { label: string; style: string }> = {
   kuliah: {
@@ -60,6 +62,22 @@ export default function DirektoriAlumniPage() {
   const [filterTahun, setFilterTahun] = useState('all')
   const [filterKarir, setFilterKarir] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Pagination
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(alumniList, 20)
+
+  useEffect(() => {
+    resetPage()
+  }, [filterJenjang, filterTahun, filterKarir, searchQuery])
 
   // Modal Edit Tracer Study
   const [editingAlumni, setEditingAlumni] = useState<any>(null)
@@ -347,7 +365,7 @@ export default function DirektoriAlumniPage() {
                   </td>
                 </tr>
               ) : (
-                alumniList.map((a) => {
+                paginatedItems.map((a) => {
                   const tr = a.alumniTracer
                   const karir = KARIR_BADGE[tr?.statusKarir || 'belum_diketahui'] || KARIR_BADGE.belum_diketahui
                   const tahunLulus = tr?.tahunLulus || a.tahunKeluar || '-'
@@ -401,6 +419,17 @@ export default function DirektoriAlumniPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 20, 50, 100]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* MODAL UPDATE TRACER STUDY */}

@@ -12,6 +12,8 @@ import {
   UserCheck,
 } from 'lucide-react'
 import { usePermission } from '@/context/PermissionContext'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 const PEGAWAI_STATUS = [
   { value: 'hadir', label: 'Hadir', activeCls: 'bg-emerald-600 text-white border-emerald-600' },
@@ -36,6 +38,10 @@ export default function PresensiPegawaiPage() {
   const [pengaturan, setPengaturan] = useState<any>(null)
   const [rows, setRows] = useState<any[]>([])
   const [rekapRows, setRekapRows] = useState<any[]>([])
+
+  // Pagination
+  const harianPagination = useTablePagination(rows, 20)
+  const rekapPagination = useTablePagination(rekapRows, 20)
 
   const fetchData = async (mode = activeTab, tgl = tanggal, bln = bulan) => {
     setLoading(true)
@@ -257,9 +263,11 @@ export default function PresensiPegawaiPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {rows.map((r, idx) => (
+                    {harianPagination.paginatedItems.map((r, idx) => (
                       <tr key={r.pegawaiId} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                        <td className="px-4 py-3 text-center font-mono text-slate-400">{idx + 1}</td>
+                        <td className="px-4 py-3 text-center font-mono text-slate-400">
+                          {(harianPagination.currentPage - 1) * harianPagination.pageSize + idx + 1}
+                        </td>
                         <td className="px-4 py-3">
                           <span className="font-bold text-slate-900 dark:text-white block">
                             {r.nama}
@@ -324,6 +332,17 @@ export default function PresensiPegawaiPage() {
                 </table>
               </div>
 
+              {/* Pagination Bar */}
+              <TablePagination
+                currentPage={harianPagination.currentPage}
+                totalPages={harianPagination.totalPages}
+                totalItems={harianPagination.totalItems}
+                pageSize={harianPagination.pageSize}
+                pageSizeOptions={[10, 20, 25, 50, 100]}
+                onPageChange={(p) => harianPagination.setCurrentPage(p)}
+                onPageSizeChange={(s) => harianPagination.setPageSize(s)}
+              />
+
               <div className="flex justify-end bg-slate-50 px-6 py-4 border-t border-slate-200 dark:bg-slate-800/40 dark:border-slate-800">
                 {allowCreate ? (
                   <button
@@ -359,9 +378,11 @@ export default function PresensiPegawaiPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {rekapRows.map((r, idx) => (
+                {rekapPagination.paginatedItems.map((r, idx) => (
                   <tr key={r.pegawaiId} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                    <td className="px-4 py-3 text-center font-mono text-slate-400">{idx + 1}</td>
+                    <td className="px-4 py-3 text-center font-mono text-slate-400">
+                      {(rekapPagination.currentPage - 1) * rekapPagination.pageSize + idx + 1}
+                    </td>
                     <td className="px-4 py-3">
                       <span className="font-bold text-slate-900 dark:text-white block">{r.nama}</span>
                       <span className="text-[10px] text-slate-400 uppercase">{r.jenisPegawai}</span>
@@ -378,6 +399,17 @@ export default function PresensiPegawaiPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Bar */}
+          <TablePagination
+            currentPage={rekapPagination.currentPage}
+            totalPages={rekapPagination.totalPages}
+            totalItems={rekapPagination.totalItems}
+            pageSize={rekapPagination.pageSize}
+            pageSizeOptions={[10, 20, 25, 50, 100]}
+            onPageChange={(p) => rekapPagination.setCurrentPage(p)}
+            onPageSizeChange={(s) => rekapPagination.setPageSize(s)}
+          />
         </div>
       )}
     </div>

@@ -28,6 +28,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 interface KalenderItem {
   id: number
@@ -106,6 +108,17 @@ export default function KalenderAkademikPage() {
 
   // Feedback State
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Pagination for Table View
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useTablePagination(events, 15)
 
   // Modal Form State
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -675,7 +688,7 @@ export default function KalenderAkademikPage() {
                     </td>
                   </tr>
                 ) : (
-                  events.map((ev) => {
+                  paginatedItems.map((ev) => {
                     const kat = KATEGORI_CONFIG[ev.kategori] || KATEGORI_CONFIG.lainnya
                     const startStr = new Date(ev.tanggalMulai).toLocaleDateString('id-ID', {
                       day: 'numeric',
@@ -766,6 +779,17 @@ export default function KalenderAkademikPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Bar */}
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            pageSizeOptions={[10, 15, 25, 50]}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPageSizeChange={(s) => setPageSize(s)}
+          />
         </div>
       )}
 

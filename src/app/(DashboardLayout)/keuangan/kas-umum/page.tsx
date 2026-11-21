@@ -19,6 +19,8 @@ import {
 import SearchableSelect from '@/components/ui/searchable-select'
 import { formatRupiah } from '@/lib/terbilang'
 import { usePermission } from '@/context/PermissionContext'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 export default function KasUmumPage() {
   const { canCreate, canEdit, canDelete } = usePermission()
@@ -47,6 +49,22 @@ export default function KasUmumPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Pagination Transaksi
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(transaksiList, 25)
+
+  useEffect(() => {
+    resetPage()
+  }, [filterJenis, filterKategori, startDate, endDate, searchQuery])
 
   // Modal Transaksi
   const [isTrxOpen, setIsTrxOpen] = useState(false)
@@ -476,7 +494,7 @@ export default function KasUmumPage() {
                       </td>
                     </tr>
                   ) : (
-                    transaksiList.map((t) => {
+                    paginatedItems.map((t) => {
                       const isMasuk = t.jenis === 'pemasukan'
                       return (
                         <tr key={t.id} className="hover:bg-slate-50/70">
@@ -557,6 +575,17 @@ export default function KasUmumPage() {
                   )}
                 </tbody>
               </table>
+
+              {/* Pagination Bar */}
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 25, 50, 100]}
+                onPageChange={(p) => setCurrentPage(p)}
+                onPageSizeChange={(s) => setPageSize(s)}
+              />
             </div>
           </div>
         </div>

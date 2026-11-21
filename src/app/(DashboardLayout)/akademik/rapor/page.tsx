@@ -18,6 +18,8 @@ import {
 import SearchableSelect from '@/components/ui/searchable-select'
 import RaporPrintModal from '@/components/akademik/RaporPrintModal'
 import { usePermission } from '@/context/PermissionContext'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 export default function RaporPage() {
   const { canCreate, canEdit } = usePermission()
@@ -37,6 +39,17 @@ export default function RaporPage() {
   const [sekolahProfil, setSekolahProfil] = useState<any>(null)
   const [kepalaSekolah, setKepalaSekolah] = useState<any>(null)
   const [rekapSiswa, setRekapSiswa] = useState<any[]>([])
+
+  // Pagination
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useTablePagination(rekapSiswa, 20)
 
   // Modal Edit Catatan Wali & Kehadiran
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -365,7 +378,7 @@ export default function RaporPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {rekapSiswa.map((row) => (
+                {paginatedItems.map((row) => (
                   <tr key={row.siswa.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
                     <td className="px-4 py-3.5 text-center">
                       {row.peringkat > 0 ? (
@@ -447,6 +460,17 @@ export default function RaporPage() {
             </table>
           </div>
         )}
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 20, 25, 50, 100]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* MODAL EDIT CATATAN WALI KELAS & KEHADIRAN */}

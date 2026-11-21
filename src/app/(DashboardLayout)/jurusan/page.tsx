@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 interface Jenjang {
   id: number
@@ -45,6 +47,22 @@ export default function JurusanPage() {
   const [loading, setLoading] = useState(true)
 
   const [selectedJenjang, setSelectedJenjang] = useState('')
+
+  // Pagination
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(jurusanList, 15)
+
+  useEffect(() => {
+    resetPage()
+  }, [selectedJenjang])
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingJurusan, setEditingJurusan] = useState<Jurusan | null>(null)
 
@@ -250,7 +268,7 @@ export default function JurusanPage() {
                   </td>
                 </tr>
               ) : (
-                jurusanList.map((jur) => (
+                paginatedItems.map((jur) => (
                   <tr
                     key={jur.id}
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
@@ -314,6 +332,17 @@ export default function JurusanPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 15, 25, 50]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* Modal Form Jurusan */}

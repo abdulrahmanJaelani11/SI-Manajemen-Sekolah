@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { usePermission } from '@/context/PermissionContext'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 import {
   CalendarDays,
   Plus,
@@ -29,6 +31,17 @@ export default function CmsKegiatanPage() {
 
   const [kegiatan, setKegiatan] = useState<KegiatanItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Pagination for Kegiatan grid
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useTablePagination(kegiatan, 9)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<KegiatanItem | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -225,8 +238,9 @@ export default function CmsKegiatanPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {kegiatan.map((item) => (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {paginatedItems.map((item) => (
             <div
               key={item.id}
               className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
@@ -292,6 +306,20 @@ export default function CmsKegiatanPage() {
             </div>
           ))}
         </div>
+
+        {/* Pagination Bar */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            pageSizeOptions={[6, 9, 15, 30]}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPageSizeChange={(s) => setPageSize(s)}
+          />
+        </div>
+      </div>
       )}
 
       {/* Modal Tambah / Edit */}

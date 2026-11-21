@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { usePermission } from '@/context/PermissionContext'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 import {
   Award,
   BookOpen,
@@ -53,6 +55,17 @@ export default function CmsKeunggulanPage() {
 
   const [items, setItems] = useState<KeunggulanItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Pagination for Keunggulan cards
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useTablePagination(items, 8)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<KeunggulanItem | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -246,8 +259,9 @@ export default function CmsKeunggulanPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((item) => (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {paginatedItems.map((item) => (
             <div
               key={item.id}
               className={`flex flex-col justify-between rounded-2xl border bg-white p-5 shadow-sm transition hover:shadow-md dark:bg-slate-900 ${
@@ -344,6 +358,20 @@ export default function CmsKeunggulanPage() {
             </div>
           ))}
         </div>
+
+        {/* Pagination Bar */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            pageSizeOptions={[4, 8, 12, 24]}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPageSizeChange={(s) => setPageSize(s)}
+          />
+        </div>
+      </div>
       )}
 
       {/* Modal Form Tambah / Edit */}

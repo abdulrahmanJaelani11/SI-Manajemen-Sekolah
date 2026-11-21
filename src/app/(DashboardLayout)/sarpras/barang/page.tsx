@@ -32,6 +32,8 @@ import SearchableSelect from '@/components/ui/searchable-select'
 import LabelAsetModal, { AssetLabelItem } from '@/components/sarpras/LabelAsetModal'
 import { usePermission } from '@/context/PermissionContext'
 import { formatRupiah } from '@/lib/terbilang'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 interface KategoriItem {
   id: number
@@ -119,6 +121,22 @@ export default function InventarisBarangPage() {
   const [selectedRuangan, setSelectedRuangan] = useState('all')
   const [selectedKondisi, setSelectedKondisi] = useState('all')
   const [selectedSumberDana, setSelectedSumberDana] = useState('all')
+
+  // Pagination
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(barangList, 18)
+
+  useEffect(() => {
+    resetPage()
+  }, [searchQuery, selectedKategori, selectedRuangan, selectedKondisi, selectedSumberDana])
 
   // Feedback State
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -659,7 +677,7 @@ export default function InventarisBarangPage() {
       ) : viewMode === 'grid' ? (
         /* GRID VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {barangList.map((b) => {
+          {paginatedItems.map((b) => {
             const kon = KONDISI_MAP[b.kondisiUtama] || KONDISI_MAP.baik
             const KonIcon = kon.icon
             const isChecked = selectedIds.includes(b.id)
@@ -823,7 +841,7 @@ export default function InventarisBarangPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {barangList.map((b) => {
+                {paginatedItems.map((b) => {
                   const kon = KONDISI_MAP[b.kondisiUtama] || KONDISI_MAP.baik
                   const isChecked = selectedIds.includes(b.id)
 
@@ -917,6 +935,20 @@ export default function InventarisBarangPage() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Pagination Bar untuk Grid & Table View */}
+      {barangList.length > 0 && !loading && (
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[12, 18, 36, 72, 100]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+          className="shadow-sm"
+        />
       )}
 
       {/* 5. MODAL TAMBAH / UBAH ASET BARANG */}

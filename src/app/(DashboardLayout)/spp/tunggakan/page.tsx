@@ -14,6 +14,8 @@ import {
 import { formatRupiah } from '@/lib/terbilang'
 import Link from 'next/link'
 import SearchableSelect from '@/components/ui/searchable-select'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 export default function TunggakanSppPage() {
   const [dataTunggakan, setDataTunggakan] = useState<any[]>([])
@@ -31,6 +33,22 @@ export default function TunggakanSppPage() {
   const [selectedJenjang, setSelectedJenjang] = useState('')
   const [selectedKelas, setSelectedKelas] = useState('')
   const [tahunAjaran, setTahunAjaran] = useState('2024/2025')
+
+  // Pagination
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(dataTunggakan, 20)
+
+  useEffect(() => {
+    resetPage()
+  }, [search, selectedJenjang, selectedKelas, tahunAjaran])
 
   const fetchTunggakan = async () => {
     setLoading(true)
@@ -274,7 +292,7 @@ export default function TunggakanSppPage() {
                   </td>
                 </tr>
               ) : (
-                dataTunggakan.map((item) => (
+                paginatedItems.map((item) => (
                   <tr
                     key={item.siswaId}
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
@@ -338,6 +356,17 @@ export default function TunggakanSppPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 20, 50, 100]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
     </div>
   )

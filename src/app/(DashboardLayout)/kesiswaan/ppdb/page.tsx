@@ -21,6 +21,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 const STATUS_MAP: Record<string, { label: string; badge: string }> = {
   menunggu: {
@@ -77,6 +79,22 @@ export default function AdminPpdbPage() {
   const [filterJenjang, setFilterJenjang] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Pagination Pendaftar
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(pendaftarList, 25)
+
+  useEffect(() => {
+    resetPage()
+  }, [filterGelombang, filterJenjang, filterStatus, searchQuery])
 
   // Modal Detail & Seleksi
   const [selectedPendaftar, setSelectedPendaftar] = useState<any>(null)
@@ -503,7 +521,7 @@ export default function AdminPpdbPage() {
                       </td>
                     </tr>
                   ) : (
-                    pendaftarList.map((item) => {
+                    paginatedItems.map((item) => {
                       const st = STATUS_MAP[item.statusSeleksi] || STATUS_MAP.menunggu
                       return (
                         <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30">
@@ -587,6 +605,17 @@ export default function AdminPpdbPage() {
                   )}
                 </tbody>
               </table>
+
+              {/* Pagination Bar */}
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 25, 50, 100]}
+                onPageChange={(p) => setCurrentPage(p)}
+                onPageSizeChange={(s) => setPageSize(s)}
+              />
             </div>
           </div>
         </div>

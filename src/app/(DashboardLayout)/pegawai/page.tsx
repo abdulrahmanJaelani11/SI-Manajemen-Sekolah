@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 interface Pegawai {
   id: number
@@ -48,6 +50,22 @@ export default function PegawaiPage() {
   // Filters
   const [search, setSearch] = useState('')
   const [selectedJenis, setSelectedJenis] = useState('')
+
+  // Pagination
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(pegawaiList, 25)
+
+  useEffect(() => {
+    resetPage()
+  }, [search, selectedJenis])
 
   // Modals
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -356,7 +374,7 @@ export default function PegawaiPage() {
                   </td>
                 </tr>
               ) : (
-                pegawaiList.map((p) => (
+                paginatedItems.map((p) => (
                   <tr
                     key={p.id}
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
@@ -443,6 +461,17 @@ export default function PegawaiPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50, 100]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* Modal Form Pegawai */}

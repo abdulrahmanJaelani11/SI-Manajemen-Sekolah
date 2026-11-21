@@ -16,6 +16,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 const STATUS_BK_MAP: Record<string, { label: string; style: string }> = {
   tercatat: {
@@ -61,6 +63,17 @@ export default function KedisiplinanPage() {
   const [filterStatusBk, setFilterStatusBk] = useState('all')
   const [filterKelasId, setFilterKelasId] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Pagination Log
+  const logPagination = useTablePagination(logs, 20)
+
+  // Pagination Rekap
+  const rekapPagination = useTablePagination(rekapSiswa, 20)
+
+  useEffect(() => {
+    logPagination.resetPage()
+    rekapPagination.resetPage()
+  }, [filterJenis, filterStatusBk, filterKelasId, searchQuery])
 
   // Modal Catat Poin Baru
   const [isCatatOpen, setIsCatatOpen] = useState(false)
@@ -493,7 +506,7 @@ export default function KedisiplinanPage() {
                       </td>
                     </tr>
                   ) : (
-                    logs.map((row) => {
+                    logPagination.paginatedItems.map((row) => {
                       const bk = STATUS_BK_MAP[row.statusBk] || STATUS_BK_MAP.tercatat
                       const isPrestasi = row.jenis === 'prestasi'
                       return (
@@ -569,6 +582,17 @@ export default function KedisiplinanPage() {
                   )}
                 </tbody>
               </table>
+
+              {/* Pagination Bar Log */}
+              <TablePagination
+                currentPage={logPagination.currentPage}
+                totalPages={logPagination.totalPages}
+                totalItems={logPagination.totalItems}
+                pageSize={logPagination.pageSize}
+                pageSizeOptions={[10, 20, 50, 100]}
+                onPageChange={(p) => logPagination.setCurrentPage(p)}
+                onPageSizeChange={(s) => logPagination.setPageSize(s)}
+              />
             </div>
           </div>
         </div>
@@ -597,7 +621,7 @@ export default function KedisiplinanPage() {
                     </td>
                   </tr>
                 ) : (
-                  rekapSiswa.map((s) => (
+                  rekapPagination.paginatedItems.map((s) => (
                     <tr key={s.siswaId} className="hover:bg-slate-50/70">
                       <td className="px-4 py-3">
                         <div className="font-bold text-slate-900">{s.nama}</div>
@@ -632,6 +656,17 @@ export default function KedisiplinanPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Bar Rekap */}
+          <TablePagination
+            currentPage={rekapPagination.currentPage}
+            totalPages={rekapPagination.totalPages}
+            totalItems={rekapPagination.totalItems}
+            pageSize={rekapPagination.pageSize}
+            pageSizeOptions={[10, 20, 50, 100]}
+            onPageChange={(p) => rekapPagination.setCurrentPage(p)}
+            onPageSizeChange={(s) => rekapPagination.setPageSize(s)}
+          />
         </div>
       )}
 

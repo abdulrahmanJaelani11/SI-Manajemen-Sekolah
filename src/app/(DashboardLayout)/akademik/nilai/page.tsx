@@ -16,6 +16,8 @@ import {
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
 import { calculateNilaiAkhir, getPredikat } from '@/lib/akademik/grade-utils'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 export default function InputNilaiPage() {
   const { canCreate, canEdit } = usePermission()
@@ -48,6 +50,17 @@ export default function InputNilaiPage() {
 
   // Student Grade Rows
   const [rows, setRows] = useState<any[]>([])
+
+  // Pagination
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useTablePagination(rows, 25)
 
   const fetchNilaiData = async (ta?: string, sem?: string, kId?: string, mId?: string) => {
     if (kId && mId) setLoadingRows(true)
@@ -377,11 +390,13 @@ export default function InputNilaiPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {rows.map((r, idx) => {
+                  {paginatedItems.map((r, idx) => {
                     const isTuntas = r.nilaiAkhir >= kkm
                     return (
                       <tr key={r.siswaId} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                        <td className="px-4 py-3 text-center font-mono text-slate-400">{idx + 1}</td>
+                        <td className="px-4 py-3 text-center font-mono text-slate-400">
+                          {(currentPage - 1) * pageSize + idx + 1}
+                        </td>
                         <td className="px-4 py-3">
                           <span className="font-bold text-slate-900 dark:text-white block">
                             {r.nama}
@@ -466,6 +481,17 @@ export default function InputNilaiPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Bar */}
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 20, 25, 50, 100]}
+              onPageChange={(p) => setCurrentPage(p)}
+              onPageSizeChange={(s) => setPageSize(s)}
+            />
 
             {/* Footer Action Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 px-6 py-4 border-t border-slate-200 dark:bg-slate-800/40 dark:border-slate-800">

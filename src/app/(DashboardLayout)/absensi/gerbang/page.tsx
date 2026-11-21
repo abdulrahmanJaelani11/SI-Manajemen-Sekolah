@@ -20,6 +20,8 @@ import {
 } from 'lucide-react'
 import { usePermission } from '@/context/PermissionContext'
 import QrScannerModal from '@/components/spp/QrScannerModal'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 export default function PresensiGerbangPage() {
   const { canCreate, canEdit } = usePermission()
@@ -49,6 +51,17 @@ export default function PresensiGerbangPage() {
     jamMasukPegawai: '07:00',
     jamPulangPegawai: '15:30',
   })
+
+  // Pagination for logs
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useTablePagination(logs, 15)
 
   // Scanner Inputs & Camera
   const [manualInput, setManualInput] = useState('')
@@ -724,7 +737,7 @@ export default function PresensiGerbangPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {logs.map((l) => (
+                    {paginatedItems.map((l) => (
                       <tr key={l.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
                         <td className="px-5 py-3">
                           <span className="font-bold text-slate-900 dark:text-white block">
@@ -767,6 +780,17 @@ export default function PresensiGerbangPage() {
                 </table>
               </div>
             )}
+
+            {/* Pagination Bar */}
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 15, 25, 50, 100]}
+              onPageChange={(p) => setCurrentPage(p)}
+              onPageSizeChange={(s) => setPageSize(s)}
+            />
           </div>
         </div>
       </div>

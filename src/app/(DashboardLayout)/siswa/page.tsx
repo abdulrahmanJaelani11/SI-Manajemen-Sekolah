@@ -27,6 +27,7 @@ import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
 import { useInstitution } from '@/context/InstitutionContext'
 import KartuPelajarMasalModal from '@/components/siswa/KartuPelajarMasalModal'
+import TablePagination from '@/components/ui/table-pagination'
 
 interface Jenjang {
   id: number
@@ -122,6 +123,11 @@ export default function SiswaPage() {
   const [selectedStatus, setSelectedStatus] = useState('')
   const [selectedGender, setSelectedGender] = useState('')
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [paginationMeta, setPaginationMeta] = useState({ total: 0, totalPages: 1 })
+
   // Inisialisasi scope berdasarkan profil user dan konfigurasi mode satuan pendidikan
   useEffect(() => {
     if (isSingleJenjang && defaultJenjangId) {
@@ -187,6 +193,8 @@ export default function SiswaPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
+      params.append('page', String(currentPage))
+      params.append('limit', String(pageSize))
       if (search) params.append('search', search)
       if (selectedJenjang) params.append('jenjangId', selectedJenjang)
       if (selectedKelas) params.append('kelasId', selectedKelas)
@@ -207,7 +215,15 @@ export default function SiswaPage() {
       const dataSiswa = await resSiswa.json()
       const dataStats = await resStats.json()
 
-      if (dataSiswa.success) setSiswaList(dataSiswa.data)
+      if (dataSiswa.success) {
+        setSiswaList(dataSiswa.data || [])
+        if (dataSiswa.meta) {
+          setPaginationMeta({
+            total: dataSiswa.meta.total || (dataSiswa.data?.length ?? 0),
+            totalPages: dataSiswa.meta.totalPages || 1,
+          })
+        }
+      }
       if (dataStats.success) setStats(dataStats.data)
     } catch (err) {
       console.error('Fetch siswa error:', err)
@@ -240,11 +256,15 @@ export default function SiswaPage() {
   }, [])
 
   useEffect(() => {
+    setCurrentPage(1)
+  }, [search, selectedJenjang, selectedKelas, selectedStatus, selectedGender, scopeMode])
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       fetchData()
     }, 250)
     return () => clearTimeout(timer)
-  }, [search, selectedJenjang, selectedKelas, selectedStatus, selectedGender, scopeMode])
+  }, [search, selectedJenjang, selectedKelas, selectedStatus, selectedGender, scopeMode, currentPage, pageSize])
 
   // Filter kelas untuk dropdown berdasarkan jenjang yang dipilih
   const availableKelas = useMemo(() => {
@@ -978,6 +998,17 @@ export default function SiswaPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={paginationMeta.totalPages}
+          totalItems={paginationMeta.total}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 20, 25, 50, 100]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* ======================================================== */}

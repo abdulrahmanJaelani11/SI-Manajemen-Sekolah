@@ -13,6 +13,8 @@ import {
   Key,
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 interface Role {
   id: number
@@ -59,6 +61,17 @@ export default function PenggunaPage() {
   const [pegawais, setPegawais] = useState<PegawaiOption[]>([])
   const [jenjangs, setJenjangs] = useState<JenjangOption[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Pagination
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+  } = useTablePagination(users, 15)
 
   // Modals
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -250,7 +263,7 @@ export default function PenggunaPage() {
                   </td>
                 </tr>
               ) : (
-                users.map((u) => (
+                paginatedItems.map((u) => (
                   <tr
                     key={u.id}
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
@@ -348,6 +361,17 @@ export default function PenggunaPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 15, 25, 50]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* Modal Form Pengguna */}

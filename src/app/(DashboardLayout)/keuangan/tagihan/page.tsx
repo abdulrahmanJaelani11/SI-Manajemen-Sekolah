@@ -19,6 +19,8 @@ import {
 import SearchableSelect from '@/components/ui/searchable-select'
 import { formatRupiah } from '@/lib/terbilang'
 import { usePermission } from '@/context/PermissionContext'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 const STATUS_TAGIHAN: Record<string, { label: string; style: string }> = {
   belum_bayar: {
@@ -72,6 +74,22 @@ export default function TagihanNonSppPage() {
   const [filterKelas, setFilterKelas] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Pagination Tagihan
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(tagihanList, 25)
+
+  useEffect(() => {
+    resetPage()
+  }, [filterJenis, filterKelas, filterStatus, searchQuery])
 
   // Modal Generate Tagihan
   const [isGenerateOpen, setIsGenerateOpen] = useState(false)
@@ -538,7 +556,7 @@ export default function TagihanNonSppPage() {
                       </td>
                     </tr>
                   ) : (
-                    tagihanList.map((item) => {
+                    paginatedItems.map((item) => {
                       const st = STATUS_TAGIHAN[item.status] || STATUS_TAGIHAN.belum_bayar
                       return (
                         <tr key={item.id} className="hover:bg-slate-50/70">
@@ -623,6 +641,17 @@ export default function TagihanNonSppPage() {
                   )}
                 </tbody>
               </table>
+
+              {/* Pagination Bar */}
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 25, 50, 100]}
+                onPageChange={(p) => setCurrentPage(p)}
+                onPageSizeChange={(s) => setPageSize(s)}
+              />
             </div>
           </div>
         </div>

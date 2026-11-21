@@ -15,6 +15,8 @@ import { formatRupiah } from '@/lib/terbilang'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
 import { useInstitution } from '@/context/InstitutionContext'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 interface TarifItem {
   id: number
@@ -45,6 +47,22 @@ export default function MasterTarifSppPage() {
   // Filters
   const [selectedJenjang, setSelectedJenjang] = useState('')
   const [tahunAjaran, setTahunAjaran] = useState('')
+
+  // Pagination
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(tarifList, 15)
+
+  useEffect(() => {
+    resetPage()
+  }, [selectedJenjang, tahunAjaran])
 
   // Sinkronisasi otomatis jenjang pada mode Single-Jenjang
   useEffect(() => {
@@ -296,7 +314,7 @@ export default function MasterTarifSppPage() {
                   </td>
                 </tr>
               ) : (
-                tarifList.map((t) => (
+                paginatedItems.map((t) => (
                   <tr
                     key={t.id}
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
@@ -368,6 +386,17 @@ export default function MasterTarifSppPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 15, 25, 50]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* Modal Form Tarif */}

@@ -14,11 +14,12 @@ export function hasPermission(
     return true
   }
 
-  // Normalisasi path agar cocok (misal mencocokkan prefix atau path exact)
-  const normalizedTarget = menuPath.replace(/\/$/, '')
-  const perm = user.permissions.find(
-    (p) => p.menuPath.replace(/\/$/, '') === normalizedTarget
-  )
+  // Normalisasi path agar cocok (mencocokkan exact path atau prefix hierarki)
+  const normalizedTarget = menuPath.replace(/\/$/, '') || '/'
+  const perm = user.permissions.find((p) => {
+    const pClean = p.menuPath.replace(/\/$/, '') || '/'
+    return pClean === normalizedTarget || (pClean !== '/' && (normalizedTarget.startsWith(pClean + '/') || normalizedTarget === pClean))
+  })
 
   if (!perm) return false
 

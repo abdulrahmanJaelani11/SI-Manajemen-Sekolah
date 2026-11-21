@@ -20,6 +20,8 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 export default function KenaikanKelasPage() {
   const { canCreate } = usePermission()
@@ -46,6 +48,9 @@ export default function KenaikanKelasPage() {
 
   const [historySearch, setHistorySearch] = useState('')
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Pagination for Riwayat
+  const riwayatPagination = useTablePagination(riwayatList, 20)
 
   // Muat daftar kelas & riwayat
   const fetchInitialData = async (asalId?: string, hSearch?: string) => {
@@ -647,7 +652,7 @@ export default function KenaikanKelasPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {riwayatList.map((r) => (
+                  {riwayatPagination.paginatedItems.map((r) => (
                     <tr key={r.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
                       <td className="px-6 py-3.5 whitespace-nowrap text-slate-500 font-mono">
                         {new Date(r.tanggalProses).toLocaleDateString('id-ID', {
@@ -713,6 +718,17 @@ export default function KenaikanKelasPage() {
               </table>
             </div>
           )}
+
+          {/* Pagination Bar */}
+          <TablePagination
+            currentPage={riwayatPagination.currentPage}
+            totalPages={riwayatPagination.totalPages}
+            totalItems={riwayatPagination.totalItems}
+            pageSize={riwayatPagination.pageSize}
+            pageSizeOptions={[10, 20, 50, 100]}
+            onPageChange={(p) => riwayatPagination.setCurrentPage(p)}
+            onPageSizeChange={(s) => riwayatPagination.setPageSize(s)}
+          />
         </div>
       )}
     </div>

@@ -24,6 +24,8 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 
 interface RoleItem {
   id: number
@@ -116,6 +118,17 @@ export default function ManajemenRolePage() {
       return matchesSearch && matchesStatus
     })
   }, [roles, searchQuery, statusFilter])
+
+  // Pagination
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useTablePagination(filteredRoles, 15)
 
   // KPI Calculations
   const kpi = useMemo(() => {
@@ -447,7 +460,7 @@ export default function ManajemenRolePage() {
                   </td>
                 </tr>
               ) : (
-                filteredRoles.map((role) => {
+                paginatedItems.map((role) => {
                   const isProtected = role.id === 1
                   return (
                     <tr
@@ -575,6 +588,17 @@ export default function ManajemenRolePage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 15, 25, 50]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* ========================================================= */}

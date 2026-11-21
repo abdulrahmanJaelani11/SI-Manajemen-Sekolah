@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
+import TablePagination from '@/components/ui/table-pagination'
 
 interface AuditLogItem {
   id: number
@@ -541,46 +542,15 @@ export default function AuditLogPage() {
         </div>
 
         {/* 5. PAGINATION BAR */}
-        <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-t border-gray-100 dark:border-gray-700 gap-3 text-xs text-gray-500">
-          <div className="flex items-center gap-2">
-            <span>Tampilkan</span>
-            <select
-              value={limit}
-              onChange={(e) => {
-                setLimit(Number(e.target.value))
-                setPage(1)
-              }}
-              className="px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
-            >
-              <option value={20}>20 log</option>
-              <option value={50}>50 log</option>
-              <option value={100}>100 log</option>
-            </select>
-            <span>dari {stats.totalLogs} total aktivitas</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 disabled:opacity-40"
-              title="Halaman Sebelumnya"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="font-semibold text-gray-800 dark:text-gray-200 px-2">
-              Halaman {page} dari {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 disabled:opacity-40"
-              title="Halaman Berikutnya"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        <TablePagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={stats.totalLogs}
+          pageSize={limit}
+          pageSizeOptions={[20, 50, 100]}
+          onPageChange={(p) => setPage(p)}
+          onPageSizeChange={(s) => setLimit(s)}
+        />
       </div>
 
       {/* 6. MODAL DETAIL SNAPSHOT DATA */}

@@ -24,6 +24,8 @@ import QrScannerModal from '@/components/spp/QrScannerModal'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { usePermission } from '@/context/PermissionContext'
 import { formatRupiah } from '@/lib/terbilang'
+import TablePagination from '@/components/ui/table-pagination'
+import useTablePagination from '@/hooks/useTablePagination'
 
 interface SirkulasiItem {
   id: number
@@ -264,6 +266,22 @@ export default function SirkulasiPerpustakaanPage() {
     )
   }, [sirkulasiList, searchQuery])
 
+  // Pagination
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    resetPage,
+  } = useTablePagination(displayedSirkulasi, 15)
+
+  useEffect(() => {
+    resetPage()
+  }, [searchQuery, statusFilter])
+
   return (
     <div className="space-y-6 pb-12">
       {/* 1. HEADER SECTION */}
@@ -474,13 +492,13 @@ export default function SirkulasiPerpustakaanPage() {
                   </td>
                 </tr>
               ) : (
-                displayedSirkulasi.map((item, idx) => {
+                paginatedItems.map((item, idx) => {
                   const isKembali = item.status === 'kembali'
                   const isTerlambat = item.status === 'terlambat'
 
                   return (
                     <tr key={item.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-750 transition">
-                      <td className="py-3.5 px-4 text-center text-gray-400">{idx + 1}</td>
+                      <td className="py-3.5 px-4 text-center text-gray-400">{(currentPage - 1) * pageSize + idx + 1}</td>
                       <td className="py-3.5 px-4 whitespace-nowrap font-mono text-xs font-semibold text-gray-800 dark:text-gray-200">
                         {item.noPeminjaman}
                       </td>
@@ -580,6 +598,17 @@ export default function SirkulasiPerpustakaanPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 15, 25, 50]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(s) => setPageSize(s)}
+        />
       </div>
 
       {/* 5. MODAL PINJAM BUKU BARU */}

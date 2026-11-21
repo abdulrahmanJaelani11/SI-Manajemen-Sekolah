@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { usePermission } from '@/context/PermissionContext'
+import { useTablePagination } from '@/hooks/useTablePagination'
+import TablePagination from '@/components/ui/table-pagination'
 import {
   Sliders,
   Plus,
@@ -43,6 +45,17 @@ export default function CmsCarouselPage() {
 
   const [carousels, setCarousels] = useState<CarouselItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Pagination for Carousel cards
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    paginatedItems,
+    setCurrentPage,
+    setPageSize,
+  } = useTablePagination(carousels, 6)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<CarouselItem | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -311,8 +324,9 @@ export default function CmsCarouselPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {carousels.map((item, index) => (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {paginatedItems.map((item, index) => (
             <div
               key={item.id}
               className={`relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-md dark:bg-slate-900 ${
@@ -445,6 +459,20 @@ export default function CmsCarouselPage() {
             </div>
           ))}
         </div>
+
+        {/* Pagination Bar */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            pageSizeOptions={[4, 6, 10, 20]}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPageSizeChange={(s) => setPageSize(s)}
+          />
+        </div>
+      </div>
       )}
 
       {/* Modal Tambah / Edit Carousel */}
