@@ -1,105 +1,47 @@
-import React, { useState, useEffect } from 'react'
+'use client'
+
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useTheme } from 'next-themes'
 import { usePathname } from 'next/navigation'
 import SidebarContent from './sidebaritems'
 import SimpleBar from 'simplebar-react'
 import { Icon } from '@iconify/react'
 import FullLogo from '../shared/logo/FullLogo'
-import { Button } from '@/components/ui/button'
 import { usePermission } from '@/context/PermissionContext'
 import { useInstitution } from '@/context/InstitutionContext'
-import {
-  AMMenu,
-  AMMenuItem,
-  AMSidebar,
-  AMSubmenu,
-} from 'tailwind-sidebar'
+import { AMSidebar } from 'tailwind-sidebar'
 import 'tailwind-sidebar/styles.css'
 
-interface SidebarItemType {
-  heading?: string
-  id?: number | string
-  name?: string
-  title?: string
-  icon?: string
-  url?: string
-  children?: SidebarItemType[]
-  disabled?: boolean
-  isPro?: boolean
+// Pemetaan ikon Solar untuk setiap grup parent sub-menu
+const GROUP_ICONS: Record<string, string> = {
+  'Utama': 'solar:widget-2-linear',
+  'Menu Utama': 'solar:widget-2-linear',
+  'Akademik & Kurikulum': 'solar:book-bookmark-linear',
+  'Akademik & Kesiswaan': 'solar:square-academic-cap-linear',
+  'Kesiswaan & PPDB': 'solar:users-group-two-rounded-linear',
+  'Presensi & Kehadiran': 'solar:calendar-mark-linear',
+  'Keuangan & SPP': 'solar:wallet-money-linear',
+  'Perpustakaan & Literasi': 'solar:book-2-linear',
+  'Sarana & Prasarana': 'solar:buildings-2-linear',
+  'CMS & Publikasi': 'solar:gallery-wide-linear',
+  'CMS & Publikasi Web': 'solar:gallery-wide-linear',
+  'Pengaturan Sistem': 'solar:settings-linear',
 }
 
-const renderSidebarItems = (
-  items: SidebarItemType[],
-  currentPath: string,
-  onClose?: () => void,
-  isSubItem: boolean = false
-) => {
-  return items.map((item, index) => {
-    const isSelected = currentPath === item?.url
-    const IconComp = item.icon || null
+const normalizePath = (p?: string) => {
+  if (!p) return ''
+  const clean = p.split('?')[0].split('#')[0]
+  return clean === '/' ? '/' : clean.replace(/\/+$/, '')
+}
 
-    const iconElement = IconComp ? (
-      <Icon icon={IconComp} height={21} width={21} />
-    ) : (
-      <Icon icon={'ri:checkbox-blank-circle-line'} height={9} width={9} />
-    )
-
-    // Heading
-    if (item.heading) {
-      return (
-        <div className='mb-1' key={item.heading}>
-          <AMMenu
-            subHeading={item.heading}
-            ClassName='hide-menu leading-21 text-blue-300/70 dark:text-blue-300/70 font-bold uppercase text-xs'
-          />
-        </div>
-      )
-    }
-
-    // Submenu
-    if (item.children?.length) {
-      return (
-        <AMSubmenu
-          key={item.id}
-          icon={iconElement}
-          title={item.name}
-          ClassName='mt-0.5 text-blue-100 dark:text-blue-100'>
-          {renderSidebarItems(item.children, currentPath, onClose, true)}
-        </AMSubmenu>
-      )
-    }
-
-    // Regular menu item
-    const link = item.url?.startsWith('http') ? '#!' : item.url
-
-    const itemClassNames = isSubItem
-      ? `mt-0.5 text-blue-100 dark:text-blue-100 !hover:bg-transparent ${
-          isSelected ? '!bg-transparent !text-white font-semibold' : ''
-        } !px-1.5`
-      : `mt-0.5 text-blue-100 dark:text-blue-100 hover:bg-blue-800/50 hover:text-white`
-
-    return (
-      <div onClick={onClose} key={index}>
-        <AMMenuItem
-          key={item.id}
-          icon={iconElement}
-          isSelected={isSelected}
-          link={link || undefined}
-          target='_self'
-          badge={!!item.isPro}
-          badgeColor='bg-lightsecondary'
-          badgeTextColor='text-secondary'
-          disabled={item.disabled}
-          badgeContent={item.isPro ? 'Pro' : undefined}
-          component={Link}
-          className={`${itemClassNames} ${isSelected ? 'bg-[#2563EB] !text-white border-l-4 border-[#F59E0B] rounded-lg' : ''}`}>
-          <span className='truncate flex-1'>{item.title || item.name}</span>
-        </AMMenuItem>
-      </div>
-    )
-  })
+const isUrlActive = (url?: string, currentPath = '') => {
+  if (!url) return false
+  const cleanUrl = normalizePath(url)
+  const cleanCurrent = normalizePath(currentPath)
+  if (!cleanUrl) return false
+  if (cleanUrl === '/') return cleanCurrent === '/'
+  return cleanCurrent === cleanUrl || cleanCurrent.startsWith(cleanUrl + '/')
 }
 
 const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
@@ -109,6 +51,18 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
   const { hasJurusan } = useInstitution()
   const [activePeriodLabel, setActivePeriodLabel] = useState('2024/2025')
   const [menuSections, setMenuSections] = useState<any[]>(SidebarContent)
+
+  // Inisialisasi awal grup yang terbuka langsung dari rute saat ini
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {}
+    for (const section of SidebarContent) {
+      if (!section.heading || section.heading === 'Utama' || section.heading === 'Menu Utama') continue
+      if (section.children?.some((child: any) => isUrlActive(child.url, pathname))) {
+        initial[section.heading] = true
+      }
+    }
+    return initial
+  })
 
   useEffect(() => {
     const fetchActivePeriod = async () => {
@@ -138,7 +92,6 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
           setMenuSections(json.data)
         }
       } catch (err) {
-        // Gunakan fallback SidebarContent jika fetch gagal
         console.error('Sidebar dynamic menu fetch error:', err)
       }
     }
@@ -152,19 +105,55 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
   const sidebarMode = theme === 'light' || theme === 'dark' ? theme : undefined
 
   // Filter menu items berdasarkan izin peran RBAC dan ketersediaan kejuruan (hasJurusan)
-  const filteredSections = menuSections
-    .map((section) => {
-      const visibleChildren = (section.children || []).filter((child: any) => {
-        if (!child.url) return true
-        if (child.url === '/jurusan' && !hasJurusan) return false
-        return canView(child.url)
+  const filteredSections = useMemo(() => {
+    return menuSections
+      .map((section) => {
+        const visibleChildren = (section.children || []).filter((child: any) => {
+          if (!child.url) return true
+          if (child.url === '/jurusan' && !hasJurusan) return false
+          return canView(child.url)
+        })
+        return {
+          ...section,
+          children: visibleChildren,
+        }
       })
-      return {
-        ...section,
-        children: visibleChildren,
+      .filter((section) => section.children && section.children.length > 0)
+  }, [menuSections, hasJurusan, canView])
+
+  // Otomatis buka sub-menu yang halaman aktifnya sedang dikunjungi saat pathname berubah
+  useEffect(() => {
+    if (!pathname) return
+
+    for (const section of filteredSections) {
+      if (!section.heading || section.heading === 'Utama' || section.heading === 'Menu Utama') continue
+      if (!section.children) continue
+
+      const containsActive = section.children.some((child: any) =>
+        isUrlActive(child.url, pathname)
+      )
+
+      if (containsActive) {
+        const heading = section.heading
+        setOpenGroups((prev) => {
+          // Cegah pembuatan objek baru jika sudah terbuka agar tidak memicu re-render berlebih
+          if (prev[heading]) return prev
+          return {
+            ...prev,
+            [heading]: true,
+          }
+        })
+        break
       }
-    })
-    .filter((section) => section.children && section.children.length > 0)
+    }
+  }, [pathname, filteredSections])
+
+  const toggleGroup = useCallback((heading: string) => {
+    setOpenGroups((prev) => ({
+      ...prev,
+      [heading]: !prev[heading],
+    }))
+  }, [])
 
   return (
     <AMSidebar
@@ -177,29 +166,137 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
       className='fixed left-0 top-0 border-r border-blue-800/30 bg-[#1E3A8A] z-10 h-screen'>
       {/* Logo Sekolah */}
       <div className='px-5 py-4 flex items-center overflow-hidden border-b border-blue-800/40'>
-        <Link href='/' onClick={onClose} className='w-full block hover:opacity-95 transition'>
+        <Link href='/' onClick={() => onClose?.()} className='w-full block hover:opacity-95 transition'>
           <FullLogo variant='sidebar' />
         </Link>
       </div>
 
-      {/* Sidebar items */}
+      {/* Sidebar items with Submenu Collapsible Architecture */}
       <SimpleBar className='h-[calc(100vh-100px)]'>
-        <div className='px-6'>
-          {filteredSections.map((section, index) => (
-            <div key={index}>
-              {renderSidebarItems(
-                [
-                  ...(section.heading ? [{ heading: section.heading }] : []),
-                  ...(section.children || []),
-                ],
-                pathname,
-                onClose
-              )}
-            </div>
-          ))}
+        <div className='px-3 py-3 space-y-1.5'>
+          {filteredSections.map((section, index) => {
+            const isMainMenu = section.heading === 'Utama' || section.heading === 'Menu Utama'
+
+            // Menu Utama (Dashboard) ditampilkan langsung sebagai menu utama teratas
+            if (isMainMenu) {
+              return (
+                <div key={index} className='space-y-1 mb-2'>
+                  {section.children.map((child: any) => {
+                    const isSelected = isUrlActive(child.url, pathname)
+                    return (
+                      <Link
+                        key={child.id || child.url}
+                        href={child.url || '/'}
+                        prefetch={true}
+                        onClick={() => onClose?.()}
+                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all duration-150 ${
+                          isSelected
+                            ? 'bg-[#2563EB] text-white shadow-md shadow-blue-900/40 font-bold border-l-4 border-[#F59E0B]'
+                            : 'text-blue-100 hover:bg-blue-800/50 hover:text-white font-medium'
+                        }`}>
+                        <Icon
+                          icon={child.icon || 'solar:widget-2-linear'}
+                          height={20}
+                          width={20}
+                          className={`flex-shrink-0 ${isSelected ? 'text-white' : 'text-blue-200'}`}
+                        />
+                        <span className='whitespace-normal break-words leading-tight flex-1'>{child.name}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )
+            }
+
+            // Grup Modul sebagai Parent Sub-Menu (bisa dibuka/tutup)
+            const isOpen = !!openGroups[section.heading]
+            const hasActiveChild = (section.children || []).some((child: any) =>
+              isUrlActive(child.url, pathname)
+            )
+            const groupIcon = GROUP_ICONS[section.heading] || 'solar:folder-with-files-linear'
+
+            return (
+              <div key={index} className='mb-1'>
+                {/* Tombol Parent Sub-Menu */}
+                <button
+                  type='button'
+                  onClick={() => toggleGroup(section.heading)}
+                  className={`w-full flex items-center justify-between gap-2 px-2.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 select-none group text-left ${
+                    hasActiveChild
+                      ? 'bg-blue-800/60 text-white shadow-xs'
+                      : 'text-blue-100/90 hover:bg-blue-800/40 hover:text-white'
+                  }`}
+                  aria-expanded={isOpen}>
+                  <div className='flex items-center gap-2.5 min-w-0 flex-1'>
+                    <span
+                      className={`flex items-center justify-center h-7 w-7 rounded-lg transition-colors flex-shrink-0 ${
+                        hasActiveChild
+                          ? 'bg-amber-400/20 text-amber-300'
+                          : 'bg-blue-900/60 text-blue-300 group-hover:text-white group-hover:bg-blue-800/60'
+                      }`}>
+                      <Icon icon={groupIcon} height={17} width={17} />
+                    </span>
+                    <span className='whitespace-normal break-words text-[11px] font-bold tracking-tight uppercase leading-snug flex-1'>
+                      {section.heading}
+                    </span>
+                  </div>
+
+                  <div className='flex items-center gap-1.5 flex-shrink-0 ml-1'>
+                    {hasActiveChild && (
+                      <span className='h-1.5 w-1.5 rounded-full bg-amber-400 ring-2 ring-amber-400/30' />
+                    )}
+                    <span className='text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-blue-900/60 text-blue-300/80'>
+                      {section.children.length}
+                    </span>
+                    <Icon
+                      icon='solar:alt-arrow-down-linear'
+                      height={14}
+                      width={14}
+                      className={`text-blue-300/80 transition-transform duration-200 ease-in-out ${
+                        isOpen ? 'rotate-180 text-white' : 'rotate-0'
+                      }`}
+                    />
+                  </div>
+                </button>
+
+                {/* Daftar Child / Sub-Menu */}
+                {isOpen && (
+                  <div className='mt-1 mb-2 ml-4 pl-2.5 border-l-2 border-blue-700/50 space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150'>
+                    {section.children.map((child: any) => {
+                      const isSelected = isUrlActive(child.url, pathname)
+                      const childIcon = child.icon || 'solar:menu-dots-square-linear'
+
+                      return (
+                        <Link
+                          key={child.id || child.url}
+                          href={child.url || '/'}
+                          prefetch={true}
+                          onClick={() => onClose?.()}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
+                            isSelected
+                              ? 'bg-[#2563EB] text-white font-bold border-l-4 border-[#F59E0B] shadow-xs'
+                              : 'text-blue-200/90 hover:text-white hover:bg-blue-800/40 font-medium'
+                          }`}>
+                          <Icon
+                            icon={childIcon}
+                            height={16}
+                            width={16}
+                            className={`flex-shrink-0 ${
+                              isSelected ? 'text-amber-300' : 'text-blue-300/70'
+                            }`}
+                          />
+                          <span className='whitespace-normal break-words leading-tight flex-1'>{child.name}</span>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
 
           {/* Kartu Status Peran Pengguna Aktif */}
-          <div className='mt-8 mb-6 overflow-hidden'>
+          <div className='mt-6 mb-6 overflow-hidden'>
             <div className='flex flex-col bg-blue-900/60 rounded-xl p-4 border border-blue-700/40'>
               <div className='flex items-center justify-between'>
                 <span className='text-[11px] font-bold uppercase tracking-wider text-amber-400'>

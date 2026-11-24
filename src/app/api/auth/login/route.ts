@@ -4,6 +4,7 @@ import { comparePassword } from '@/lib/auth/password'
 import { signToken } from '@/lib/auth/jwt'
 import { apiError, apiSuccess } from '@/lib/api-response'
 import { getClientIp, checkRateLimit, resetRateLimit } from '@/lib/auth/rate-limiter'
+import { logAudit } from '@/lib/audit-logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,6 +62,19 @@ export async function POST(request: NextRequest) {
 
     // Reset rate limiter setelah login berhasil
     resetRateLimit(rateLimitKey)
+
+    // Catat ke Audit Trail
+    await logAudit({
+      request,
+      userId: user.id,
+      username: user.username,
+      namaUser: user.namaLengkap,
+      role: user.role.namaRole,
+      modul: 'AUTH',
+      aksi: 'LOGIN',
+      deskripsi: `Pengguna ${user.namaLengkap} (@${user.username}) berhasil masuk ke sistem dengan peran ${user.role.namaRole}`,
+      status: 'SUCCESS',
+    })
 
     const tokenPayload = {
       userId: user.id,

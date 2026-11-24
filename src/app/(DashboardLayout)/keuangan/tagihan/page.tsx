@@ -15,6 +15,7 @@ import {
   Printer,
   RotateCcw,
   Coins,
+  Lock,
 } from 'lucide-react'
 import SearchableSelect from '@/components/ui/searchable-select'
 import { formatRupiah } from '@/lib/terbilang'
@@ -897,61 +898,161 @@ export default function TagihanNonSppPage() {
             onSubmit={handleSubmitPayment}
             className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900 space-y-4"
           >
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Pembayaran / Cicilan Tagihan
-                </h3>
-                <p className="text-xs text-slate-500">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    {payTarget.jenis?.bolehCicil ? 'Pembayaran / Cicilan Tagihan' : 'Pelunasan Tagihan'}
+                  </h3>
+                  {payTarget.jenis?.bolehCicil ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Boleh Dicicil
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                      <Lock className="h-3 w-3" />
+                      Wajib Lunas
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
                   {payTarget.kodeTagihan} • {payTarget.siswa?.nama}
                 </p>
               </div>
-              <button type="button" onClick={() => setPayTarget(null)}>
-                <X className="h-5 w-5 text-slate-400" />
+              <button
+                type="button"
+                onClick={() => setPayTarget(null)}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"
+              >
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="rounded-xl bg-slate-50 p-3 text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Judul Tagihan:</span>
-                <span className="font-bold">{payTarget.judul}</span>
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3.5 text-xs space-y-1.5 border border-slate-200/60 dark:border-slate-800">
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-slate-500 flex-shrink-0">Judul Tagihan:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 text-right">{payTarget.judul}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center pt-1 border-t border-slate-200/50 dark:border-slate-700/50">
                 <span className="text-slate-500">Sisa Kewajiban:</span>
-                <span className="font-mono font-black text-rose-600">
+                <span className="font-mono font-black text-rose-600 dark:text-rose-400 text-sm">
                   {formatRupiah(payTarget.sisaTagihan)}
                 </span>
               </div>
             </div>
 
+            {/* Info Box jika tagihan tidak dapat dicicil */}
+            {!payTarget.jenis?.bolehCicil && (
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2 text-[11px] text-amber-800 dark:text-amber-300">
+                <Lock className="h-4 w-4 flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                <span>
+                  Jenis tagihan ini diatur <strong>Wajib Lunas Sekaligus</strong>. Nominal pembayaran dikunci penuh sebesar sisa kewajiban.
+                </span>
+              </div>
+            )}
+
             <div className="space-y-3 text-xs">
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-bold">Nominal Dibayar Sekarang (Rp) *</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="font-bold text-slate-800 dark:text-slate-200">
+                    Nominal Dibayar Sekarang (Rp) *
+                  </label>
                   {payTarget.jenis?.bolehCicil && (
+                    <span className="text-[11px] text-slate-500">
+                      Bisa bayar sebagian/cicilan
+                    </span>
+                  )}
+                </div>
+
+                <div className="relative flex items-center">
+                  <span className="absolute left-3.5 text-xs font-bold text-slate-400 font-mono select-none">
+                    Rp
+                  </span>
+                  <input
+                    type="number"
+                    required
+                    min={payTarget.jenis?.bolehCicil ? 1000 : payTarget.sisaTagihan}
+                    max={payTarget.sisaTagihan}
+                    readOnly={!payTarget.jenis?.bolehCicil}
+                    value={payForm.nominalBayar || ''}
+                    onChange={(e) =>
+                      setPayForm({ ...payForm, nominalBayar: Number(e.target.value) })
+                    }
+                    className={`w-full rounded-xl border pl-11 pr-4 py-2.5 font-mono font-bold text-sm transition ${
+                      !payTarget.jenis?.bolehCicil
+                        ? 'border-slate-200 bg-slate-100 text-slate-500 dark:bg-slate-800/80 dark:border-slate-700 cursor-not-allowed'
+                        : 'border-slate-300 bg-white text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600'
+                    }`}
+                    placeholder="Masukkan nominal..."
+                  />
+                  {!payTarget.jenis?.bolehCicil && (
+                    <Lock className="h-4 w-4 text-slate-400 absolute right-3.5" />
+                  )}
+                </div>
+
+                {/* Tombol Pintas Preset Nominal jika boleh cicil */}
+                {payTarget.jenis?.bolehCicil && (
+                  <div className="flex items-center gap-2 mt-2">
                     <button
                       type="button"
                       onClick={() =>
                         setPayForm({ ...payForm, nominalBayar: payTarget.sisaTagihan })
                       }
-                      className="text-[11px] font-bold text-blue-600 hover:underline"
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+                        payForm.nominalBayar === payTarget.sisaTagihan
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
                     >
-                      Bayar Lunas Penuh
+                      Bayar Lunas Penuh ({formatRupiah(payTarget.sisaTagihan)})
                     </button>
-                  )}
-                </div>
-                <input
-                  type="number"
-                  required
-                  min={payTarget.jenis?.bolehCicil ? 1000 : payTarget.sisaTagihan}
-                  max={payTarget.sisaTagihan}
-                  readOnly={!payTarget.jenis?.bolehCicil}
-                  value={payForm.nominalBayar}
-                  onChange={(e) =>
-                    setPayForm({ ...payForm, nominalBayar: Number(e.target.value) })
-                  }
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 font-mono font-bold"
-                />
+                    {payTarget.sisaTagihan >= 20000 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPayForm({
+                            ...payForm,
+                            nominalBayar: Math.floor(payTarget.sisaTagihan / 2),
+                          })
+                        }
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+                          payForm.nominalBayar === Math.floor(payTarget.sisaTagihan / 2)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        50% ({formatRupiah(Math.floor(payTarget.sisaTagihan / 2))})
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Preview kalkulasi sisa kewajiban jika boleh cicil */}
+                {payTarget.jenis?.bolehCicil && (
+                  (() => {
+                    const nominal = Number(payForm.nominalBayar) || 0
+                    const sisaSetelahBayar = Math.max(0, payTarget.sisaTagihan - nominal)
+                    const isLunas = sisaSetelahBayar === 0 && nominal > 0
+
+                    return (
+                      <div className="mt-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-xs">
+                        <span className="text-slate-500">
+                          {isLunas ? 'Status Pembayaran:' : 'Sisa Tagihan Setelah Ini:'}
+                        </span>
+                        <span
+                          className={`font-mono font-bold ${
+                            isLunas
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-amber-600 dark:text-amber-400'
+                          }`}
+                        >
+                          {isLunas ? 'LUNAS (Penuh)' : `${formatRupiah(sisaSetelahBayar)} (Cicilan)`}
+                        </span>
+                      </div>
+                    )
+                  })()
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

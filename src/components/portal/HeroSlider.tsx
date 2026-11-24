@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   ArrowRight,
   ExternalLink,
   Sparkles,
@@ -47,7 +48,7 @@ export default function HeroSlider({ slides }: { slides: SlideItem[] }) {
   // Fallback jika belum ada slide aktif dari CMS
   if (!slides || slides.length === 0) {
     return (
-      <section className="relative w-full overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E3A8A] to-[#172554] text-white h-[460px] sm:h-[520px] lg:h-[600px] flex items-center justify-center">
+      <section className="relative w-full overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E3A8A] to-[#172554] text-white min-h-[500px] h-[calc(100vh-116px)] max-h-[920px] flex items-center justify-center">
         {/* Dekorasi Cahaya Latar Samar */}
         <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-[#3B82F6]/15 blur-3xl pointer-events-none" />
         <div className="absolute -right-20 -bottom-20 h-96 w-96 rounded-full bg-[#F59E0B]/10 blur-3xl pointer-events-none" />
@@ -61,7 +62,7 @@ export default function HeroSlider({ slides }: { slides: SlideItem[] }) {
         <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-[#0F172A]/95 via-[#1E3A8A]/65 to-transparent pointer-events-none" />
 
         {/* Konten Teks & CTA di Posisi Bottom-Center */}
-        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center text-center px-4 sm:px-6 pb-12 sm:pb-14 max-w-3xl mx-auto">
+        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center text-center px-4 sm:px-6 pb-16 sm:pb-20 max-w-3xl mx-auto">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full bg-[#F59E0B]/20 border border-[#F59E0B]/40 text-[#FCD34D] backdrop-blur-sm mb-2.5">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Pendidikan Unggul Berkelanjutan</span>
@@ -88,6 +89,15 @@ export default function HeroSlider({ slides }: { slides: SlideItem[] }) {
             </Link>
           </div>
         </div>
+
+        {/* Indikator Scroll ke Bawah */}
+        <a
+          href="#keunggulan"
+          aria-label="Gulir ke konten utama"
+          className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 hidden sm:flex flex-col items-center text-white/50 hover:text-white transition group cursor-pointer"
+        >
+          <ChevronDown className="w-4 h-4 text-amber-400 animate-bounce" />
+        </a>
       </section>
     )
   }
@@ -96,7 +106,7 @@ export default function HeroSlider({ slides }: { slides: SlideItem[] }) {
     <section
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      className="relative w-full overflow-hidden h-[460px] sm:h-[520px] lg:h-[600px] bg-[#0F172A] group"
+      className="relative w-full overflow-hidden min-h-[500px] h-[calc(100vh-116px)] max-h-[920px] bg-[#0F172A] group"
     >
       {/* Dekorasi Cahaya Latar Samar */}
       <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-[#3B82F6]/15 blur-3xl pointer-events-none" />
@@ -128,7 +138,7 @@ export default function HeroSlider({ slides }: { slides: SlideItem[] }) {
           <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-[#0F172A]/95 via-[#1E3A8A]/65 to-transparent pointer-events-none" />
 
           {/* Konten Teks & CTA di Posisi Bottom-Center (Diperkecil & Ramping) */}
-          <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center text-center px-4 sm:px-6 pb-12 sm:pb-14 max-w-3xl mx-auto">
+          <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center text-center px-4 sm:px-6 pb-16 sm:pb-20 max-w-3xl mx-auto">
             {/* Badge Kategori */}
             {s.badge && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full bg-[#F59E0B]/20 border border-[#F59E0B]/40 text-[#FCD34D] backdrop-blur-sm mb-2.5">
@@ -197,7 +207,7 @@ export default function HeroSlider({ slides }: { slides: SlideItem[] }) {
           </button>
 
           {/* Indikator Dot Carousel */}
-          <div className="absolute bottom-4 inset-x-0 flex justify-center gap-2 z-20">
+          <div className="absolute bottom-7 sm:bottom-8 inset-x-0 flex justify-center gap-2 z-20">
             {slides.map((_, idx) => (
               <button
                 key={idx}
@@ -213,6 +223,15 @@ export default function HeroSlider({ slides }: { slides: SlideItem[] }) {
           </div>
         </>
       )}
+
+      {/* Indikator Scroll ke Bawah */}
+      <a
+        href="#keunggulan"
+        aria-label="Gulir ke konten utama"
+        className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 hidden sm:flex flex-col items-center text-white/50 hover:text-white transition group cursor-pointer"
+      >
+        <ChevronDown className="w-4 h-4 text-amber-400 animate-bounce" />
+      </a>
     </section>
   )
 }

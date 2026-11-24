@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
 import { requirePermission } from '@/lib/auth/api-guard'
+import { logAudit } from '@/lib/audit-logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -137,6 +138,28 @@ export async function POST(request: NextRequest) {
       include: { kategori: true },
     })
 
+    // Catat ke Audit Trail
+    await logAudit({
+      request,
+      userId: auth.user.userId,
+      username: auth.user.username,
+      namaUser: auth.user.namaLengkap || auth.user.username,
+      role: auth.user.roleName || 'Bendahara',
+      modul: 'KEUANGAN',
+      aksi: 'CREATE',
+      deskripsi: `Pencatatan ${created.jenis === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran'} Kas Umum [${created.noBukti}] sebesar Rp ${Number(created.nominal).toLocaleString('id-ID')} (${created.kategori.nama}: ${created.uraian})`,
+      dataSesudah: {
+        noBukti: created.noBukti,
+        jenis: created.jenis,
+        kategori: created.kategori.nama,
+        nominal: Number(created.nominal),
+        uraian: created.uraian,
+        metode: created.metode,
+        pihakTerkait: created.pihakTerkait,
+      },
+      status: 'SUCCESS',
+    })
+
     return apiSuccess({
       message: `Transaksi ${created.noBukti} berhasil dicatat`,
       data: { ...created, nominal: Number(created.nominal) },
@@ -204,6 +227,29 @@ export async function PUT(request: NextRequest) {
       include: { kategori: true },
     })
 
+    // Catat ke Audit Trail
+    await logAudit({
+      request,
+      userId: auth.user.userId,
+      username: auth.user.username,
+      namaUser: auth.user.namaLengkap || auth.user.username,
+      role: auth.user.roleName || 'Bendahara',
+      modul: 'KEUANGAN',
+      aksi: 'UPDATE',
+      deskripsi: `Perubahan data Kas Umum [${updated.noBukti}] menjadi Rp ${Number(updated.nominal).toLocaleString('id-ID')} (${updated.kategori.nama}: ${updated.uraian})`,
+      dataSebelum: {
+        nominal: Number(existing.nominal),
+        uraian: existing.uraian,
+        kategoriId: existing.kategoriId,
+      },
+      dataSesudah: {
+        nominal: Number(updated.nominal),
+        uraian: updated.uraian,
+        kategoriId: updated.kategoriId,
+      },
+      status: 'SUCCESS',
+    })
+
     return apiSuccess({
       message: `Transaksi ${updated.noBukti} berhasil diperbarui`,
       data: { ...updated, nominal: Number(updated.nominal) },
@@ -231,6 +277,25 @@ export async function DELETE(request: NextRequest) {
     }
 
     await prisma.kasTransaksi.delete({ where: { id } })
+
+    // Catat ke Audit Trail
+    await logAudit({
+      request,
+      userId: auth.user.userId,
+      username: auth.user.username,
+      namaUser: auth.user.namaLengkap || auth.user.username,
+      role: auth.user.roleName || 'Bendahara',
+      modul: 'KEUANGAN',
+      aksi: 'DELETE',
+      deskripsi: `Penghapusan transaksi Kas Umum [${existing.noBukti}] sebesar Rp ${Number(existing.nominal).toLocaleString('id-ID')} (${existing.uraian})`,
+      dataSebelum: {
+        noBukti: existing.noBukti,
+        nominal: Number(existing.nominal),
+        uraian: existing.uraian,
+      },
+      status: 'WARNING',
+    })
+
     return apiSuccess({ message: `Transaksi ${existing.noBukti} berhasil dihapus` })
   } catch (error: any) {
     console.error('API Kas Umum DELETE Error:', error)

@@ -5,6 +5,7 @@ import { terbilang } from '@/lib/terbilang'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { verifyToken, JwtPayloadSiswa } from '@/lib/auth/jwt'
 import { requirePermission } from '@/lib/auth/api-guard'
+import { logAudit } from '@/lib/audit-logger'
 
 export async function GET(
   request: NextRequest,
@@ -105,6 +106,7 @@ export async function DELETE(
 
     const items = await prisma.sppPembayaran.findMany({
       where: { noTransaksi },
+      include: { siswa: true },
     })
 
     if (items.length === 0) {
@@ -115,12 +117,37 @@ export async function DELETE(
       return apiError('Transaksi ini sudah berstatus void (dibatalkan)', 400)
     }
 
+    const firstItem = items[0]
+    const totalVoided = items.reduce((acc, i) => acc + Number(i.nominalBayar), 0)
+
     // Ubah status menjadi void
     await prisma.sppPembayaran.updateMany({
       where: { noTransaksi },
       data: {
         status: 'void',
       },
+    })
+
+    // Catat ke Audit Trail
+    await logAudit({
+      request,
+      userId: auth.user.userId,
+      username: auth.user.username,
+      namaUser: auth.user.namaLengkap,
+      role: auth.user.roleName,
+      modul: 'KEUANGAN',
+      aksi: 'VOID',
+      deskripsi: `Pembatalan (VOID) transaksi SPP [${noTransaksi}] untuk siswa ${firstItem.siswa?.nama || 'Siswa'} (${firstItem.siswa?.nis || '-'}) sebesar Rp ${totalVoided.toLocaleString('id-ID')} sebanyak ${items.length} bulan (${items.map((i) => i.bulan).join(', ')})`,
+      dataSebelum: {
+        noTransaksi,
+        status: firstItem.status,
+        totalBayar: totalVoided,
+        bulan: items.map((i) => i.bulan),
+      },
+      dataSesudah: {
+        status: 'void',
+      },
+      status: 'WARNING',
     })
 
     return apiSuccess({

@@ -39,7 +39,7 @@ export default function KeunggulanSection({ items }: { items: KeunggulanItem[] }
   if (!items || items.length === 0) return null
 
   return (
-    <section className="relative -mt-12 z-30 max-w-7xl mx-auto px-4 sm:px-8">
+    <section id="keunggulan" className="relative z-30 max-w-7xl mx-auto px-4 sm:px-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {items.map((item, idx) => {
           const IconComp = ICON_MAP[item.icon] || Award

@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
 import { terbilang } from '@/lib/terbilang'
 import { requirePermission } from '@/lib/auth/api-guard'
+import { logAudit } from '@/lib/audit-logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -107,6 +108,33 @@ export async function POST(request: NextRequest) {
       (acc, p) => acc + Number(p.nominalBayar),
       0
     )
+
+    // Catat ke Audit Trail Pengawasan Keamanan
+    await logAudit({
+      request,
+      userId: auth.user.userId,
+      username: auth.user.username,
+      namaUser: auth.user.namaLengkap || String(petugas),
+      role: auth.user.roleName || 'Bendahara',
+      modul: 'KEUANGAN',
+      aksi: 'CREATE',
+      deskripsi: `Pembayaran SPP ${bulanList.length} bulan (${createdPayments.map((p) => p.bulan).join(', ')}) untuk ${siswa.nama} (${siswa.nis}) kelas ${siswa.kelas?.namaKelas || '-'} total Rp ${totalDibayar.toLocaleString('id-ID')} [No. Transaksi: ${noTransaksi}]`,
+      dataSesudah: {
+        noTransaksi,
+        siswaId: siswa.id,
+        namaSiswa: siswa.nama,
+        nis: siswa.nis,
+        kelas: siswa.kelas?.namaKelas,
+        tahunAjaran,
+        bulanTerbayar: createdPayments.map((p) => p.bulan),
+        totalTagihan: totalSubtotal,
+        diskon: parsedDiskon,
+        totalDibayar,
+        metodeBayar,
+        petugas,
+      },
+      status: 'SUCCESS',
+    })
 
     return apiSuccess({
       message: `Pembayaran SPP ${bulanList.length} bulan berhasil diproses`,

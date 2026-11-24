@@ -2,6 +2,7 @@ import React from 'react'
 import type { Metadata } from 'next'
 import { DM_Sans } from 'next/font/google'
 import './css/globals.css'
+import NextTopLoader from 'nextjs-toploader'
 import { ThemeProvider } from '@/components/theme-provider'
 import ServiceWorkerRegister from '@/app/components/service-worker/ServiceWorkerRegister'
 import prisma from '@/lib/prisma'
@@ -55,6 +56,18 @@ export default async function RootLayout({
         <meta name="theme-color" content="#1E3A8A" />
       </head>
       <body className={`${dmSans.className}`}>
+        <NextTopLoader
+          color="#2563EB"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #2563EB,0 0 5px #F59E0B"
+          zIndex={99999}
+        />
         <ThemeProvider
           attribute='class'
           defaultTheme='system'

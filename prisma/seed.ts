@@ -548,7 +548,7 @@ async function main() {
         { kode: 'UGD-01', nama: 'Uang Pangkal / Pengembangan Gedung', nominalDefault: 1500000, bolehCicil: true },
         { kode: 'SRG-01', nama: 'Paket Seragam Sekolah & Atribut', nominalDefault: 450000, bolehCicil: true },
         { kode: 'DU-01', nama: 'Biaya Daftar Ulang Tahunan', nominalDefault: 300000, bolehCicil: true },
-        { kode: 'UJN-01', nama: 'Biaya Ujian Semester / Akhir', nominalDefault: 200000, bolehCicil: false },
+        { kode: 'UJN-01', nama: 'Biaya Ujian Semester / Akhir', nominalDefault: 200000, bolehCicil: true },
         { kode: 'KGT-01', nama: 'Kegiatan Kesiswaan / Study Tour', nominalDefault: 350000, bolehCicil: true },
       ],
     })

@@ -22,8 +22,9 @@ model SecRole {
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  users       SecUser[]
-  roleMenus   SecRoleMenu[]
+  users         SecUser[]
+  roleMenus     SecRoleMenu[]
+  notifications SecNotification[]
 
   @@map("sec_role")
 }
@@ -41,9 +42,10 @@ model SecUser {
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
 
-  role        SecRole      @relation(fields: [roleId], references: [id])
-  pegawai     Pegawai?     @relation(fields: [pegawaiId], references: [id], onDelete: SetNull)
-  jenjang     RefJenjang?  @relation(fields: [jenjangId], references: [id], onDelete: SetNull)
+  role          SecRole           @relation(fields: [roleId], references: [id])
+  pegawai       Pegawai?          @relation(fields: [pegawaiId], references: [id], onDelete: SetNull)
+  jenjang       RefJenjang?       @relation(fields: [jenjangId], references: [id], onDelete: SetNull)
+  notifications SecNotification[]
 
   @@map("sec_user")
 }
@@ -1087,6 +1089,35 @@ model AuditLog {
   @@index([createdAt])
   @@map("sec_audit_log")
 }
+
+// ==========================================
+// 17. NOTIFIKASI & PUSAT PEMBERITAHUAN
+// ==========================================
+
+model SecNotification {
+  id        Int       @id @default(autoincrement())
+  userId    Int?      @map("user_id")
+  roleId    Int?      @map("role_id")
+  category  String    // "Kesiswaan & PPDB", "Keuangan & Tagihan", "Presensi & Kehadiran", "Kedisiplinan & BK", "Perpustakaan & Literasi", "Pengumuman", "Sistem"
+  type      String    @default("info") // "info", "warning", "danger", "success"
+  title     String
+  message   String    @db.Text
+  url       String?
+  isRead    Boolean   @default(false) @map("is_read")
+  readAt    DateTime? @map("read_at")
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user      SecUser?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      SecRole?  @relation(fields: [roleId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([roleId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("sec_notification")
+}
+
 
 
 

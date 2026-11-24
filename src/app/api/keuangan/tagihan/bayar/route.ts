@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { apiError, apiSuccess } from '@/lib/api-response'
 import { requirePermission } from '@/lib/auth/api-guard'
 import { getWibNow } from '@/lib/absensi/date-utils'
+import { logAudit } from '@/lib/audit-logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,6 +101,31 @@ export async function POST(request: NextRequest) {
       return payment
     })
 
+    // Catat ke Audit Trail
+    await logAudit({
+      request,
+      userId: auth.user.userId,
+      username: auth.user.username,
+      namaUser: petugasNama,
+      role: auth.user.roleName || 'Bendahara',
+      modul: 'KEUANGAN',
+      aksi: 'CREATE',
+      deskripsi: `Pembayaran ${newStatus === 'lunas' ? 'Pelunasan' : 'Cicilan'} tagihan ${tagihan.jenis.nama} untuk ${tagihan.siswa.nama} (${tagihan.siswa.nis}) sebesar Rp ${amount.toLocaleString('id-ID')} [No. Transaksi: ${result.noTransaksi}]`,
+      dataSesudah: {
+        noTransaksi: result.noTransaksi,
+        tagihanId: tagihan.id,
+        kodeTagihan: tagihan.kodeTagihan,
+        jenisTagihan: tagihan.jenis.nama,
+        namaSiswa: tagihan.siswa.nama,
+        nominalBayar: amount,
+        sisaTagihan: newSisa,
+        statusTagihan: newStatus,
+        metodeBayar,
+        petugas: petugasNama,
+      },
+      status: 'SUCCESS',
+    })
+
     return apiSuccess({
       message:
         newStatus === 'lunas'
@@ -168,6 +194,28 @@ export async function PATCH(request: NextRequest) {
           status: nextStatus,
         },
       })
+    })
+
+    // Catat ke Audit Trail
+    await logAudit({
+      request,
+      userId: auth.user.userId,
+      username: auth.user.username,
+      namaUser: auth.user.namaLengkap || auth.user.username,
+      role: auth.user.roleName,
+      modul: 'KEUANGAN',
+      aksi: 'VOID',
+      deskripsi: `Pembatalan (VOID) transaksi pembayaran tagihan [${payment.noTransaksi}] sebesar Rp ${rollbackAmount.toLocaleString('id-ID')}`,
+      dataSebelum: {
+        noTransaksi: payment.noTransaksi,
+        nominalBayar: rollbackAmount,
+        status: payment.status,
+      },
+      dataSesudah: {
+        status: 'void',
+        sisaTagihanBaru: wajibBayar - updatedPaid,
+      },
+      status: 'WARNING',
     })
 
     return apiSuccess({

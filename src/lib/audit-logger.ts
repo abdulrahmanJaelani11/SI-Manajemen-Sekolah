@@ -32,6 +32,7 @@ export interface LogAuditParams {
   dataSebelum?: any
   dataSesudah?: any
   status?: 'SUCCESS' | 'FAILED' | 'WARNING'
+  createdAt?: Date
 }
 
 export async function logAudit({
@@ -46,6 +47,7 @@ export async function logAudit({
   dataSebelum,
   dataSesudah,
   status = 'SUCCESS',
+  createdAt,
 }: LogAuditParams) {
   try {
     let ipAddress: string | null = null
@@ -83,6 +85,7 @@ export async function logAudit({
         ipAddress,
         userAgent,
         status,
+        ...(createdAt ? { createdAt } : {}),
       },
     })
   } catch (error) {
