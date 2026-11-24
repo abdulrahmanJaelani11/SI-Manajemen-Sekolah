@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { Poppins } from 'next/font/google'
 import {
   Phone,
   Mail,
@@ -13,6 +14,13 @@ import {
 import prisma from '@/lib/prisma'
 import AOSInit from '@/components/portal/AOSInit'
 import ScrollToTop from '@/components/portal/ScrollToTop'
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-poppins',
+})
 
 export const metadata = {
   title: 'Portal Resmi Lembaga Pendidikan | Sistem Informasi Sekolah',
@@ -58,7 +66,10 @@ export default async function PortalLayout({
   const profil = await getSekolahProfil()
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased font-sans selection:bg-blue-600 selection:text-white">
+    <div
+      style={{ fontFamily: poppins.style.fontFamily }}
+      className={`${poppins.className} ${poppins.variable} min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white`}
+    >
       <AOSInit />
       <ScrollToTop />
       {/* 1. TOPBAR INFORMASI KONTAK & AKSES SISTEM */}

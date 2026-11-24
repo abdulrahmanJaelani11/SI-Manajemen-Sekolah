@@ -1,6 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
+import { RichTextViewer } from '@/components/ui/rich-text-viewer'
 import {
   GraduationCap,
   Building2,
@@ -83,71 +84,66 @@ export default async function PortalProfilPage() {
             <History className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Sejarah Pendirian & Kilas Balik</h2>
+            <h2 className="text-xl font-bold text-slate-900">Sejarah Pendirian &amp; Kilas Balik</h2>
             <p className="text-xs text-slate-500">Tonggak perjalanan dan dedikasi lembaga bagi dunia pendidikan</p>
           </div>
         </div>
 
-        <div className="text-sm sm:text-base text-slate-600 leading-relaxed space-y-4 pt-2">
-          {profil?.sejarah ? (
-            <p className="whitespace-pre-line">{profil.sejarah}</p>
-          ) : (
-            <p>
-              Lembaga ini didirikan dengan tekad mulia memberikan akses pendidikan berkualitas tinggi bagi seluruh lapisan masyarakat. Berawal dari fasilitas sederhana, komitmen yang teguh telah mendorong kami berkembang menjadi institusi modern yang menaungi ratusan peserta didik berprestasi.
-            </p>
-          )}
+        <div className="text-sm sm:text-base text-slate-600 leading-relaxed pt-2">
+          <RichTextViewer
+            content={profil?.sejarah}
+            fallback={
+              <p>
+                Lembaga ini didirikan dengan tekad mulia memberikan akses pendidikan berkualitas tinggi bagi seluruh lapisan masyarakat. Berawal dari fasilitas sederhana, komitmen yang teguh telah mendorong kami berkembang menjadi institusi modern yang menaungi ratusan peserta didik berprestasi.
+              </p>
+            }
+          />
         </div>
       </section>
 
       {/* Visi, Misi, & Tujuan */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Visi */}
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-              <Compass className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Visi Lembaga</h3>
-              <p className="text-xs text-slate-500">Arah strategis masa depan</p>
-            </div>
+      <section className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-sm space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <Compass className="h-5 w-5" />
           </div>
-          <div className="rounded-2xl bg-emerald-50/50 p-5 border border-emerald-100/60 text-sm font-semibold text-emerald-950 leading-relaxed">
-            &ldquo;Menjadi institusi pendidikan berdaya saing global yang berkarakter kuat, berakhlak mulia, dan unggul dalam inovasi sains teknologi.&rdquo;
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Visi, Misi &amp; Tujuan Lembaga</h2>
+            <p className="text-xs text-slate-500">Panduan arah masa depan dan langkah strategis operasional pendidikan</p>
           </div>
         </div>
 
-        {/* Misi */}
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-              <Target className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Misi Lembaga</h3>
-              <p className="text-xs text-slate-500">Langkah operasional pendidikan</p>
-            </div>
-          </div>
-          <div className="text-xs sm:text-sm text-slate-600 space-y-2.5">
-            {profil?.visiMisi ? (
-              <p className="whitespace-pre-line">{profil.visiMisi}</p>
-            ) : (
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span>Menyelenggarakan proses pembelajaran berbasis teknologi dan nilai integritas.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span>Mengoptimalkan potensi peserta didik di bidang akademik dan non-akademik.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span>Membangun tata kelola lembaga yang transparan, akuntabel, dan profesional.</span>
-                </li>
-              </ul>
-            )}
-          </div>
+        <div className="text-sm sm:text-base text-slate-700 leading-relaxed pt-2">
+          <RichTextViewer
+            content={profil?.visiMisi}
+            fallback={
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="rounded-2xl bg-emerald-50/50 p-6 border border-emerald-100/60 space-y-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Visi Utama</span>
+                  <p className="text-sm font-semibold text-emerald-950 leading-relaxed italic">
+                    &ldquo;Menjadi institusi pendidikan berdaya saing global yang berkarakter kuat, berakhlak mulia, dan unggul dalam inovasi sains teknologi.&rdquo;
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-amber-50/40 p-6 border border-amber-100/60 space-y-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-700">Misi Pokok</span>
+                  <ul className="space-y-2 text-xs sm:text-sm text-slate-600">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span>Menyelenggarakan proses pembelajaran berbasis teknologi dan nilai integritas.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span>Mengoptimalkan potensi peserta didik di bidang akademik dan non-akademik.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span>Membangun tata kelola lembaga yang transparan, akuntabel, dan profesional.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            }
+          />
         </div>
       </section>
     </div>

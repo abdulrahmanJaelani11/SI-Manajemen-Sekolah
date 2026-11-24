@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { usePermission } from '@/context/PermissionContext'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import {
   Building2,
   Palette,
@@ -21,6 +22,24 @@ import {
   Info,
   Check,
 } from 'lucide-react'
+
+const VISI_MISI_TEMPLATES = [
+  {
+    label: 'Struktur Lengkap (Visi, Misi & Tujuan)',
+    content: `<h2>Visi Lembaga</h2><p>Menjadi institusi pendidikan berdaya saing global yang berkarakter kuat, berakhlak mulia, dan unggul dalam inovasi sains teknologi.</p><h2>Misi Lembaga</h2><ul><li>Menyelenggarakan proses pembelajaran berbasis teknologi dan nilai integritas.</li><li>Mengoptimalkan potensi peserta didik di bidang akademik dan non-akademik.</li><li>Membangun tata kelola lembaga yang transparan, akuntabel, dan profesional.</li></ul><h2>Tujuan Pokok</h2><ol><li>Mencetak lulusan yang beriman, bertakwa, dan berakhlak terpuji.</li><li>Meningkatkan prestasi kejuaraan akademik dan non-akademik di tingkat regional maupun nasional.</li><li>Mewujudkan lingkungan belajar yang kondusif, inklusif, dan ramah anak.</li></ol>`,
+  },
+  {
+    label: 'Format Ringkas (Visi & Butir Misi)',
+    content: `<h2>Visi</h2><p>Membina generasi unggul, berbudi pekerti luhur, dan siap menghadapi tantangan masa depan.</p><h2>Misi</h2><ul><li>Menghadirkan pendidikan bermutu yang merata dan adaptif.</li><li>Menanamkan nilai-nilai moral dan religius dalam seluruh kegiatan sekolah.</li><li>Mengasah keterampilan abad 21 melalui kegiatan praktik dan ekstrakurikuler terarah.</li></ul>`,
+  },
+]
+
+const SEJARAH_TEMPLATES = [
+  {
+    label: 'Struktur Kronologis Perkembangan',
+    content: `<h2>Latar Belakang & Gagasan Pendirian</h2><p>Lembaga didirikan dengan tekad mulia memberikan akses pendidikan berkualitas bagi seluruh lapisan masyarakat, berawal dari fasilitas sederhana yang diprakarsai oleh tokoh pendidik.</p><h2>Tonggak Perjalanan & Transformasi</h2><p>Seiring meningkatnya kepercayaan masyarakat, fasilitas pembelajaran, laboratorium, dan sarana penunjang terus dikembangkan untuk memenuhi kebutuhan kurikulum modern.</p><h2>Komitmen Masa Kini & Masa Depan</h2><p>Kini kami bangga dapat mendidik generasi muda dengan sistem terpadu berstandar tinggi, didukung tenaga pendidik berpengalaman dan sarana teknologi digital.</p>`,
+  },
+]
 
 const THEME_PRESETS = [
   {
@@ -622,30 +641,40 @@ export default function PengaturanSekolahPage() {
 
         {/* TAB 2: VISI, MISI & SEJARAH */}
         {activeTab === 'visi_misi' && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-6">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Rumusan Visi, Misi & Tujuan Lembaga
-              </label>
-              <textarea
-                rows={6}
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Rumusan Visi, Misi &amp; Tujuan Lembaga
+                </label>
+                <span className="text-[11px] text-slate-400">
+                  WYSIWYG Editor: Mendukung judul, poin berbutir, penomoran, kutipan, dan perataan teks
+                </span>
+              </div>
+              <RichTextEditor
                 value={formData.visiMisi || ''}
-                onChange={(e) => setFormData({ ...formData, visiMisi: e.target.value })}
-                placeholder="Visi: ...&#10;Misi: ...&#10;Tujuan: ..."
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                onChange={(val) => setFormData({ ...formData, visiMisi: val })}
+                placeholder="Tuliskan rumusan visi, misi, dan tujuan lembaga..."
+                minHeight="200px"
+                templates={VISI_MISI_TEMPLATES}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Narasi Sejarah & Profil Singkat
-              </label>
-              <textarea
-                rows={6}
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Narasi Sejarah &amp; Profil Singkat
+                </label>
+                <span className="text-[11px] text-slate-400">
+                  Tampil pada halaman profil portal dan ringkasan beranda
+                </span>
+              </div>
+              <RichTextEditor
                 value={formData.sejarah || ''}
-                onChange={(e) => setFormData({ ...formData, sejarah: e.target.value })}
+                onChange={(val) => setFormData({ ...formData, sejarah: val })}
                 placeholder="Sejarah pendirian sekolah, tokoh perintis, dan tonggak perkembangan..."
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                minHeight="220px"
+                templates={SEJARAH_TEMPLATES}
               />
             </div>
           </div>

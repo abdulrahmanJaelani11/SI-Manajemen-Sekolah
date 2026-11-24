@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import HeroSlider from '@/components/portal/HeroSlider'
 import KeunggulanSection from '@/components/portal/KeunggulanSection'
 import StatCounter from '@/components/portal/StatCounter'
+import { RichTextViewer } from '@/components/ui/rich-text-viewer'
 import {
   Users,
   GraduationCap,
@@ -153,10 +154,17 @@ export default async function PortalHomePage() {
               Membangun Ekosistem Pendidikan Modern &amp; Berkarakter
             </h2>
 
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-              {profil.sejarah ||
-                'Kami berkomitmen memberikan pengalaman pembelajaran terbaik dengan memadukan kurikulum nasional, penguatan karakter, serta literasi teknologi digital mutakhir untuk mencetak insan cendekia masa depan.'}
-            </p>
+            <div className="text-sm sm:text-base text-slate-600 leading-relaxed">
+              <RichTextViewer
+                content={profil.sejarah}
+                className="line-clamp-4"
+                fallback={
+                  <p>
+                    Kami berkomitmen memberikan pengalaman pembelajaran terbaik dengan memadukan kurikulum nasional, penguatan karakter, serta literasi teknologi digital mutakhir untuk mencetak insan cendekia masa depan.
+                  </p>
+                }
+              />
+            </div>
 
             {/* Poin Visi Misi Ringkas */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
