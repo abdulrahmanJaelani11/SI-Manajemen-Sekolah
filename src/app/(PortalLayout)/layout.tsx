@@ -109,7 +109,7 @@ export default async function PortalLayout({
             </Link>
             <span className="text-blue-400/60">|</span>
             <Link
-              href="/"
+              href="/login"
               className="flex items-center gap-1 text-blue-200 hover:text-white font-medium transition"
             >
               <LogIn className="w-3.5 h-3.5 text-blue-300" />
@@ -123,7 +123,7 @@ export default async function PortalLayout({
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex items-center justify-between">
           {/* Logo & Brand */}
-          <Link href="/portal" className="flex items-center gap-3.5 group">
+          <Link href="/" className="flex items-center gap-3.5 group">
             {profil.logoUrl ? (
               <img
                 src={profil.logoUrl}
@@ -149,7 +149,7 @@ export default async function PortalLayout({
           {/* Navigasi Desktop */}
           <nav className="hidden lg:flex items-center gap-1 text-sm font-semibold text-slate-700">
             <Link
-              href="/portal"
+              href="/"
               className="px-3.5 py-2 rounded-xl hover:text-[#2563EB] hover:bg-slate-50 transition"
             >
               Beranda
@@ -234,7 +234,7 @@ export default async function PortalLayout({
               </h4>
               <ul className="space-y-2 text-xs">
                 <li>
-                  <Link href="/portal" className="hover:text-amber-400 flex items-center gap-1.5 transition">
+                  <Link href="/" className="hover:text-amber-400 flex items-center gap-1.5 transition">
                     <ChevronRight className="w-3 h-3 text-blue-300" />
                     <span>Beranda Utama</span>
                   </Link>
@@ -334,7 +334,7 @@ export default async function PortalLayout({
                 Portal Siswa & Wali
               </Link>
               <span>•</span>
-              <Link href="/" className="hover:text-white transition">
+              <Link href="/login" className="hover:text-white transition">
                 Masuk Dashboard Admin
               </Link>
             </div>

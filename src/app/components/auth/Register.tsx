@@ -66,7 +66,7 @@ export const Register = () => {
                 Already have an account?
               </p>
               <Link
-                href='/auth/login'
+                href='/login'
                 className='text-sm font-medium text-primary hover:text-primaryemphasis'>
                 Sign In
               </Link>

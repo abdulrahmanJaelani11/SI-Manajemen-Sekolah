@@ -166,7 +166,7 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
       className='fixed left-0 top-0 border-r border-blue-800/30 bg-[#1E3A8A] z-10 h-screen'>
       {/* Logo Sekolah */}
       <div className='px-5 py-4 flex items-center overflow-hidden border-b border-blue-800/40'>
-        <Link href='/' onClick={() => onClose?.()} className='w-full block hover:opacity-95 transition'>
+        <Link href='/dashboard' onClick={() => onClose?.()} className='w-full block hover:opacity-95 transition'>
           <FullLogo variant='sidebar' />
         </Link>
       </div>
@@ -186,7 +186,7 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
                     return (
                       <Link
                         key={child.id || child.url}
-                        href={child.url || '/'}
+                        href={child.url || '/dashboard'}
                         prefetch={true}
                         onClick={() => onClose?.()}
                         className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all duration-150 ${
@@ -269,7 +269,7 @@ const SidebarLayout = ({ onClose }: { onClose?: () => void }) => {
                       return (
                         <Link
                           key={child.id || child.url}
-                          href={child.url || '/'}
+                          href={child.url || '/dashboard'}
                           prefetch={true}
                           onClick={() => onClose?.()}
                           className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${

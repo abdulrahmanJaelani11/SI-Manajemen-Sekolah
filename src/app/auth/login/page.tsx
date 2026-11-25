@@ -1,7 +1,5 @@
-import { Login } from "@/app/components/auth/Login"
+import { redirect } from 'next/navigation'
 
-const page = () => {
-    return <Login/>
+export default function AuthLoginLegacyPage() {
+  redirect('/login')
 }
-
-export default page;

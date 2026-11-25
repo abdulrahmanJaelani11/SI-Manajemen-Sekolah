@@ -96,7 +96,15 @@ class SupabaseStorageService implements StorageService {
 
   constructor() {
     this.bucket = process.env.SUPABASE_STORAGE_BUCKET || 'sekolah_uploads'
-    this.supabaseUrl = process.env.SUPABASE_URL || ''
+    let url = (process.env.SUPABASE_URL || '').trim()
+    if (url) {
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = `https://${url}`
+      }
+      url = url.replace(/https?:\/\/db\./, 'https://')
+      url = url.replace(/\/+$/, '')
+    }
+    this.supabaseUrl = url
     this.serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
   }
 
@@ -125,6 +133,7 @@ class SupabaseStorageService implements StorageService {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.serviceKey}`,
+        apikey: this.serviceKey,
         'Content-Type': 'application/octet-stream',
         'x-upsert': 'true',
       },
@@ -161,6 +170,7 @@ class SupabaseStorageService implements StorageService {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${this.serviceKey}`,
+          apikey: this.serviceKey,
         },
       })
 

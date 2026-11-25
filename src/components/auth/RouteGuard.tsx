@@ -20,7 +20,7 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push(`/auth/login?redirect=${encodeURIComponent(pathname)}`)
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`)
     }
   }, [loading, user, pathname, router])
 
@@ -79,7 +79,7 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
-            href="/"
+            href="/dashboard"
             className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-primary/90 transition"
           >
             <Home className="h-4 w-4" />

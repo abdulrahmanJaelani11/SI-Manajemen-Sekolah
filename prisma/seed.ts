@@ -47,7 +47,7 @@ async function main() {
 
   // 3. Seed Menus
   const menusData = [
-    { namaMenu: 'Dashboard Utama', path: '/', icon: 'IconDashboard', groupMenu: 'Utama', urutan: 1 },
+    { namaMenu: 'Dashboard Utama', path: '/dashboard', icon: 'IconDashboard', groupMenu: 'Utama', urutan: 1 },
     { namaMenu: 'Data Peserta Didik', path: '/siswa', icon: 'IconSchool', groupMenu: 'Akademik & Kesiswaan', urutan: 2 },
     { namaMenu: 'Rombongan Belajar & Kelas', path: '/kelas', icon: 'IconBuildingBank', groupMenu: 'Akademik & Kesiswaan', urutan: 3 },
     { namaMenu: 'Program Jurusan & Keahlian', path: '/jurusan', icon: 'IconCertificate', groupMenu: 'Akademik & Kesiswaan', urutan: 4 },

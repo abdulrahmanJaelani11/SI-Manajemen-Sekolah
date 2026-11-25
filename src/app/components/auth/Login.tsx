@@ -37,7 +37,9 @@ export const Login = () => {
           localStorage.removeItem('token')
           localStorage.setItem('user', JSON.stringify(json.data.user))
         }
-        router.push('/')
+        const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+        const redirectUrl = params?.get('redirect') || '/dashboard'
+        router.push(redirectUrl)
         router.refresh()
       } else {
         setErrorMessage(json.message || 'Username atau kata sandi tidak valid')
@@ -120,7 +122,7 @@ export const Login = () => {
 
             <div className='mt-6 border-t border-slate-100 pt-4 text-center dark:border-slate-800'>
               <Link
-                href='/portal'
+                href='/'
                 className='text-xs font-semibold text-primary hover:underline'
               >
                 ← Kembali ke Halaman Portal Publik

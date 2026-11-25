@@ -357,7 +357,7 @@ export default function DetailSiswaPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
-            <Link href="/" className="hover:text-blue-600 transition-colors">
+            <Link href="/dashboard" className="hover:text-blue-600 transition-colors">
               Dashboard
             </Link>
             <ChevronRight className="h-3 w-3" />

@@ -119,7 +119,7 @@ export default function DashboardPage() {
             </p>
             <div className="mt-3.5 flex items-center gap-2">
               <a
-                href="/portal"
+                href="/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition shadow-xs"

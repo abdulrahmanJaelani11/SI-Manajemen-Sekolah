@@ -184,7 +184,7 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
         localStorage.removeItem('token')
       }
       setUser(null)
-      router.push('/auth/login')
+      router.push('/login')
       router.refresh()
     }
   }
